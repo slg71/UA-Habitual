@@ -1,0 +1,1 @@
+Proyecto y esas cosas que se pone en un readme, vamos a hacer una aplicacion y tal y cual yy vamos a poner hobbies y la gente sube cosas y esas cosas son guays y sale juanjo
