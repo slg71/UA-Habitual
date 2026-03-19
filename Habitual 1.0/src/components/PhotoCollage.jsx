@@ -1,4 +1,4 @@
-import collageImg from '../assets/collage.jpg'  // ← el nombre que le pongas
+import collageImg from '../assets/collage.png'  // ← el nombre que le pongas
 
 export default function PhotoCollage() {
   return (
