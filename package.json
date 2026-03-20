@@ -7,8 +7,11 @@
   "type": "commonjs",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node backend/app.js"
+    "dev": "concurrently -k -n BACKEND,FRONTEND -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "node backend/app.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start": "npm run dev:backend",
+    "install:all": "npm install && npm --prefix frontend install"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -16,5 +19,8 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.20.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
