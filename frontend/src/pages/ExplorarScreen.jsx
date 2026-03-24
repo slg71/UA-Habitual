@@ -13,7 +13,7 @@ import logo from '../assets/logo.png'
 //   fetch('/api/feed').then(r => r.json()).then(setPosts)
 // }, [])
 
-export default function InicioScreen( { onPerfil, onExplorar, onInicio }) {
+export default function ExplorarScreen( { onPerfil, onExplorar, onInicio }) {
   return (
     <div className="hb-screen inicio-screen">
 
@@ -23,22 +23,14 @@ export default function InicioScreen( { onPerfil, onExplorar, onInicio }) {
         <button className="inicio-settings" aria-label="Ajustes">⚙️</button>
       </div>
 
-      {/* ── Tus comunidades ── */}
-      <section className="inicio-section">
-        <h2 className="inicio-section-title">
-          Tus comunidades
-          <button className="inicio-add-btn" aria-label="Añadir comunidad">＋</button>
-        </h2>
-
-        <div className="inicio-comunidades">
-          {/* {comunidades.map(c => (
-            <div key={c.id} className="inicio-comunidad">
-              <img src={c.foto} alt={c.nombre} className="inicio-comunidad-avatar" />
-              <span className="inicio-comunidad-nombre">{c.nombre}</span>
-            </div>
-          ))} */}
-        </div>
-      </section>
+      {/* ── Barra de búsqueda ── */}
+      <div className="explorar-search-wrapper">
+        <input
+          type="search"
+          className="explorar-search-input"
+          placeholder="🔍  Buscar"
+        />
+      </div>
 
       {/* ── Feed ── */}
       <section className="inicio-feed">
@@ -58,11 +50,11 @@ export default function InicioScreen( { onPerfil, onExplorar, onInicio }) {
 
       {/* ── Nav inferior ── */}
       <nav className="inicio-nav">
-        <button className="inicio-nav-item inicio-nav-item--active" onClick={onInicio}>
+        <button className="inicio-nav-item" onClick={onInicio}>
           <span>⌂</span>
           <span>Inicio</span>
         </button>
-        <button className="inicio-nav-item" onClick={onExplorar}>
+        <button className="inicio-nav-item inicio-nav-item--active" onClick={onExplorar}>
           <span>🔍</span>
           <span>Explorar</span>
         </button>

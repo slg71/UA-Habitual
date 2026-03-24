@@ -443,3 +443,25 @@
 }
 
 .inicio-nav-item:hover { color: #fff; }
+
+/* ── Barra de búsqueda ── */
+.explorar-search-wrapper {
+  width: 100%;
+  padding: 4px 0 14px;
+}
+
+.explorar-search-input {
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--hb-green);
+  border: none;
+  border-radius: var(--hb-radius-btn);
+  outline: none;
+  color: #fff;
+  font-size: 16px;
+  font-family: var(--hb-font-body);
+}
+
+.explorar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.75);
+}

@@ -3,6 +3,8 @@ import WelcomeScreen from '../pages/WelcomeScreen'
 import RegisterScreen from '../pages/RegisterScreen'
 import LoginScreen from '../pages/LoginScreen'
 import InicioScreen from '../pages/InicioScreen'
+import ExplorarScreen from '../pages/ExplorarScreen'
+import PerfilScreen from '../pages/PerfilScreen'
 
 export default function App() {
   const [screen, setScreen] = useState('welcome')
@@ -16,7 +18,10 @@ export default function App() {
         />
       )}
       {screen === 'register' && (
-        <RegisterScreen onBack={() => setScreen('welcome')} />
+        <RegisterScreen
+          onBack={() => setScreen('welcome')}
+          onLogin={() => setScreen('login')}
+        />
       )}
       {screen === 'login' && (
         <LoginScreen
@@ -25,7 +30,25 @@ export default function App() {
         />
       )}
       {screen === 'inicio' && (
-        <InicioScreen onLogin={() => setScreen('login')} />
+        <InicioScreen
+          onExplorar={() => setScreen('explorar')}
+          onInicio={() => setScreen('inicio')}
+          onPerfil={() => setScreen('perfil')}
+        />
+      )}
+      {screen === 'explorar' && (
+        <ExplorarScreen
+          onExplorar={() => setScreen('explorar')}
+          onInicio={() => setScreen('inicio')}
+          onPerfil={() => setScreen('perfil')}
+        />
+      )}
+      {screen === 'perfil' && (
+        <PerfilScreen
+          onExplorar={() => setScreen('explorar')}
+          onInicio={() => setScreen('inicio')}
+          onPerfil={() => setScreen('perfil')}
+        />
       )}
     </>
   )

@@ -2,7 +2,7 @@ import '../styles/habitual.css'
 import PhotoCollage from '../components/PhotoCollage'
 import logo from '../assets/logo.png'
 
-export default function RegisterScreen({ onBack }) {
+export default function RegisterScreen({ onBack, onLogin }) {
   return (
     <div className="hb-screen">
       <img src={logo} alt="Habitual" className="hb-logo" />
@@ -25,7 +25,7 @@ export default function RegisterScreen({ onBack }) {
           <label htmlFor="reg-pass2">Confirmar contraseña</label>
           <input id="reg-pass2" type="password" placeholder="Contraseña" autoComplete="new-password" />
         </div>
-        <button type="button" className="hb-btn hb-btn--primary" style={{ marginTop: 8 }}>
+        <button type="button" className="hb-btn hb-btn--primary" style={{ marginTop: 8 }} onClick={onLogin}>
           Continuar
         </button>
       </div>
