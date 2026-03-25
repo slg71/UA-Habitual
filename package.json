@@ -10,10 +10,11 @@
     "dev": "concurrently -k -n BACKEND,FRONTEND -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "node backend/app.js",
     "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
     "build:frontend": "npm --prefix frontend run build",
     "start:backend": "node backend/app.js",
     "prod": "npm run build:frontend && npm run start:backend",
-    "start": "npm run dev:backend",
+    "start": "node backend/app.js",
     "install:all": "npm install && npm --prefix frontend install"
   },
   "dependencies": {
