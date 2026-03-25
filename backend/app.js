@@ -14,6 +14,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(authRoutes);
 app.use(profileRoutes);
+app.use('/api', authRoutes);
+app.use('/api', profileRoutes);
 
 const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
 
