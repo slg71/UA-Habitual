@@ -5,17 +5,38 @@ require('dotenv').config();
 require('./config/db');
 
 const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
+const usersRoutes = require('./routes/usersRoutes');
+const communitiesRoutes = require('./routes/communitiesRoutes');
+const postsRoutes = require('./routes/postsRoutes');
+const commentsRoutes = require('./routes/commentsRoutes');
+const goalsRoutes = require('./routes/goalsRoutes');
+const followsRoutes = require('./routes/followsRoutes');
+const likesRoutes = require('./routes/likesRoutes');
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Sin prefijo /api
 app.use(authRoutes);
-app.use(profileRoutes);
+app.use(usersRoutes);
+app.use(communitiesRoutes);
+app.use(postsRoutes);
+app.use(commentsRoutes);
+app.use(goalsRoutes);
+app.use(followsRoutes);
+app.use(likesRoutes);
+
+// Con prefijo /api
 app.use('/api', authRoutes);
-app.use('/api', profileRoutes);
+app.use('/api', usersRoutes);
+app.use('/api', communitiesRoutes);
+app.use('/api', postsRoutes);
+app.use('/api', commentsRoutes);
+app.use('/api', goalsRoutes);
+app.use('/api', followsRoutes);
+app.use('/api', likesRoutes);
 
 const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
 
