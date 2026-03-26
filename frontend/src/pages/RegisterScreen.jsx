@@ -31,7 +31,7 @@ export default function RegisterScreen({ onBack, onLogin }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ username: name, email, password })
       })
 
       const data = await response.json()
