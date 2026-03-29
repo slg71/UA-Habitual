@@ -13,7 +13,7 @@ import logo from '../assets/logo.png'
 //   fetch('/api/feed').then(r => r.json()).then(setPosts)
 // }, [])
 
-export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConfiguracion } ) {
+export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConfiguracion, onCrear } ) {
   return (
     <div className="hb-screen inicio-screen">
 
@@ -62,7 +62,7 @@ export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConf
           <span>👤</span>
           <span>Perfil</span>
         </button>
-        <button className="inicio-nav-item">
+        <button className="inicio-nav-item" onClick={onCrear}>
           <span>＋</span>
           <span>Crear</span>
         </button>

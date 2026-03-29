@@ -638,3 +638,119 @@
   font-size: 14px;
   margin: 0;
 }
+
+/* ══════════════════════════════════════════════════════════
+   CREAR SCREEN
+   ══════════════════════════════════════════════════════════ */
+
+.crear-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.crear-modal {
+  background: var(--hb-bg);
+  border-radius: 18px;
+  padding: 28px 24px;
+  width: 88%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.crear-titulo {
+  background: var(--hb-green);
+  color: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  font-family: var(--hb-font-body);
+}
+
+.crear-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--hb-green-lt);
+  border: none;
+  border-radius: var(--hb-radius-input);
+  font-size: 15px;
+  color: var(--hb-text);
+  font-family: var(--hb-font-body);
+  cursor: pointer;
+  outline: none;
+}
+
+.crear-textarea {
+  width: 100%;
+  height: 130px;
+  padding: 12px 16px;
+  background: var(--hb-green-lt);
+  border: none;
+  border-radius: var(--hb-radius-input);
+  font-size: 15px;
+  color: var(--hb-text);
+  font-family: var(--hb-font-body);
+  resize: none;
+  outline: none;
+}
+
+.crear-textarea::placeholder {
+  color: var(--hb-placeholder);
+}
+
+.crear-archivo {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--hb-green-lt);
+  border-radius: var(--hb-radius-input);
+  font-size: 15px;
+  color: var(--hb-text);
+  cursor: pointer;
+  text-align: center;
+}
+
+.crear-botones {
+  display: flex;
+  gap: 14px;
+}
+
+.crear-btn {
+  flex: 1;
+  border-radius: 10px;
+}
+
+/* ── Pantalla publicación subida ── */
+.crear-publicado {
+  justify-content: center;
+  align-items: center;
+}
+
+.crear-publicado-card {
+  background: white;
+  border-radius: 20px;
+  padding: 52px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.crear-publicado-texto {
+  color: var(--hb-brown);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  font-family: var(--hb-font-body);
+}

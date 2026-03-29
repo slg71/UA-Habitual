@@ -6,6 +6,7 @@ import InicioScreen from '../pages/InicioScreen'
 import ExplorarScreen from '../pages/ExplorarScreen'
 import PerfilScreen from '../pages/PerfilScreen'
 import ConfiguracionScreen from '../pages/ConfiguracionScreen'
+import CrearScreen from '../pages/CrearScreen'
 
 export default function App() {
   const [screen, setScreen] = useState('welcome')
@@ -36,6 +37,7 @@ export default function App() {
           onInicio={() => setScreen('inicio')}
           onPerfil={() => setScreen('perfil')}
           onConfiguracion={() => setScreen('configuracion')}
+          onCrear={() => setScreen('crear')}
         />
       )}
       {screen === 'explorar' && (
@@ -44,6 +46,7 @@ export default function App() {
           onInicio={() => setScreen('inicio')}
           onPerfil={() => setScreen('perfil')}
           onConfiguracion={() => setScreen('configuracion')}
+          onCrear={() => setScreen('crear')}
         />
       )}
       {screen === 'perfil' && (
@@ -51,6 +54,8 @@ export default function App() {
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => setScreen('perfil')}
+          onConfiguracion={() => setScreen('configuracion')}
+          onCrear={() => setScreen('crear')}
         />
       )}
       {screen === 'configuracion' && (
@@ -60,6 +65,15 @@ export default function App() {
           onExplorar={() => setScreen('explorar')}
           onPerfil={() => setScreen('perfil')}
           onLogout={() => setScreen('welcome')}
+          onCrear={() => setScreen('crear')}
+        />
+      )}
+      {screen === 'crear' && (
+        <CrearScreen
+          onInicio={() => setScreen('inicio')}
+          onExplorar={() => setScreen('explorar')}
+          onPerfil={() => setScreen('perfil')}
+          onConfiguracion={() => setScreen('configuracion')}
         />
       )}
     </>

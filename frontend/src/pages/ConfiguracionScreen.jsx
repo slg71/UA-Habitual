@@ -18,7 +18,7 @@ import '../styles/habitual.css'
 //   }).then(r => { if (r.ok) { setCuentaEliminada(true); setTimeout(() => onLogout(), 2000) } })
 // }
 
-export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout }) {
+export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
   const [modoOscuro, setModoOscuro]           = useState(false)
   const [notificaciones, setNotificaciones]   = useState(true)
   const [modalEliminar, setModalEliminar]     = useState(false)
@@ -116,7 +116,7 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
           <span>👤</span>
           <span>Perfil</span>
         </button>
-        <button className="inicio-nav-item">
+        <button className="inicio-nav-item" onClick={onCrear}>
           <span>＋</span>
           <span>Crear</span>
         </button>
