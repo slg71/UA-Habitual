@@ -13,14 +13,14 @@ import logo from '../assets/logo.png'
 //   fetch('/api/feed').then(r => r.json()).then(setPosts)
 // }, [])
 
-export default function ExplorarScreen( { onPerfil, onExplorar, onInicio }) {
+export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConfiguracion } ) {
   return (
     <div className="hb-screen inicio-screen">
 
       {/* ── Cabecera ── */}
       <div className="inicio-header">
         <img src={logo} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
-        <button className="inicio-settings" aria-label="Ajustes">⚙️</button>
+        <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
       {/* ── Barra de búsqueda ── */}
