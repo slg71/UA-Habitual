@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import '../styles/habitual.css'
+import '../styles/configuracion.css'
 
 // Ejemplo con API:
 // const guardar = () => {

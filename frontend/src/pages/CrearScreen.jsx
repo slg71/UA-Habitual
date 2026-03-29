@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import '../styles/habitual.css'
+import '../styles/crear.css'
 
 // Ejemplo con API:
 // const publicar = () => {

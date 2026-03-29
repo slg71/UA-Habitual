@@ -1,0 +1,128 @@
+/* ════════════════════════════════════════════════════
+   configuracion.css  –  ConfiguracionScreen
+   ════════════════════════════════════════════════════ */
+
+.cfg-back { position: absolute; left: 0; }
+.cfg-titulo { font-size: 28px; margin-bottom: 0; }
+
+.cfg-lista {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  margin-top: 16px;
+}
+
+.cfg-fila {
+  background: #d4cfc5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  color: var(--hb-text);
+}
+
+.cfg-fila-eliminar {
+  background: #b94a42;
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.cfg-toggle {
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  background: #bbb;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.cfg-toggle--on { background: var(--hb-green); }
+
+.cfg-toggle-bola {
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  display: block;
+}
+.cfg-toggle--on .cfg-toggle-bola { transform: translateX(22px); }
+
+.cfg-botones { display: flex; gap: 14px; width: 100%; margin-top: 18px; }
+.cfg-btn { flex: 1; border-radius: 10px; }
+
+.cfg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.cfg-modal {
+  background: var(--hb-bg);
+  border-radius: 18px;
+  padding: 24px 20px;
+  width: 88%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.cfg-modal-titulo {
+  background: var(--hb-green);
+  color: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
+.cfg-modal-texto { font-size: 14px; color: var(--hb-text); text-align: center; margin: 0; }
+.cfg-error { color: #b94a42; font-size: 13px; margin: 0; }
+
+.cfg-eliminada-pantalla { justify-content: center; }
+
+.cfg-eliminada-card {
+  background: var(--hb-green);
+  border-radius: 20px;
+  padding: 52px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.cfg-eliminada-circulo {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cfg-eliminada-titulo { color: white; font-size: 22px; font-weight: 700; margin: 0; }
+.cfg-eliminada-sub { color: rgba(255,255,255,0.8); font-size: 14px; margin: 0; }

@@ -1,4 +1,5 @@
 import '../styles/habitual.css'
+import '../styles/inicio.css'
 import PhotoCollage from '../components/PhotoCollage'
 import logo from '../assets/logo.png'
 
