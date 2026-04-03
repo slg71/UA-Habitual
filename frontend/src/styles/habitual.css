@@ -18,12 +18,30 @@
   --hb-radius-photo: 14px;
   --hb-radius-input: 12px;
 
-  --hb-font-title: 'Georgia', 'Times New Roman', serif;
-  --hb-font-body:  system-ui, -apple-system, sans-serif;
+  --hb-font-title: 'DM Serif Display', serif;
+  --hb-font-body: 'DM Sans', sans-serif;
 }
 
-/* ── Reset mínimo ───────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+/* ── Reset y Reglas Globales ────────────────────────────── */
+*, *::before, *::after { 
+  box-sizing: border-box; 
+}
+
+body {
+  margin: 0;
+  font-family: var(--hb-font-body);
+  color: var(--hb-text);
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--hb-font-title);
+  margin-top: 0;
+  font-weight: 700;
+}
 
 #root {
   width: 100% !important;

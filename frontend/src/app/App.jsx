@@ -54,7 +54,6 @@ export default function App() {
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => setScreen('perfil')}
-          onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
         />
       )}
