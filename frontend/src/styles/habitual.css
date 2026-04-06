@@ -160,6 +160,12 @@ h1, h2, h3, h4, h5, h6 {
 .hb-field input::placeholder { color: var(--hb-placeholder); }
 .hb-field input:focus { box-shadow: 0 0 0 2.5px var(--hb-green); }
 
+.hb-form-message {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--hb-brown-mid);
+}
+
 /* ── Volver ─────────────────────────────────────────────── */
 .hb-back {
   margin-top: 18px;
