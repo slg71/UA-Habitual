@@ -63,12 +63,62 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
   const [tabActiva, setTabActiva] = useState('publicaciones');
   const [mostrarProgreso, setMostrarProgreso] = useState(false);
   const [postSeleccionado, setPostSeleccionado] = useState(null);
+  const [usuario, setUsuario] = useState(null);
+  const [etiquetas, setEtiquetas] = useState([]);
+  const [perfilCargando, setPerfilCargando] = useState(true);
+  const [perfilError, setPerfilError] = useState('');
 
   // ── Lógica del Calendario de Rachas ──
   const [fechaVisualizada, setFechaVisualizada] = useState(new Date()); 
   
   // Array simulado: días que el usuario ha cumplido el hábito en este mes
   const [diasRacha, setDiasRacha] = useState([2, 3, 4, 8, 9, 14, 15, 16, 17, 22]); 
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setPerfilError('No hay sesión activa.');
+      setPerfilCargando(false);
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const cargarPerfil = async () => {
+      try {
+        setPerfilCargando(true);
+        setPerfilError('');
+
+        const [profileRes, communitiesRes] = await Promise.all([
+          fetch('/api/profile', { headers }),
+          fetch('/api/user/communities', { headers })
+        ]);
+
+        const profileData = await profileRes.json();
+        const communitiesData = await communitiesRes.json();
+
+        if (!profileRes.ok) {
+          throw new Error(profileData?.error || 'No se pudo cargar el perfil.');
+        }
+
+        if (!communitiesRes.ok) {
+          throw new Error(communitiesData?.error || 'No se pudieron cargar las etiquetas.');
+        }
+
+        setUsuario(profileData);
+        setEtiquetas(Array.isArray(communitiesData) ? communitiesData : []);
+      } catch (error) {
+        setPerfilError(error.message || 'Error al cargar los datos del perfil.');
+      } finally {
+        setPerfilCargando(false);
+      }
+    };
+
+    cargarPerfil();
+  }, []);
 
   const añoActual = fechaVisualizada.getFullYear();
   const mesActual = fechaVisualizada.getMonth();
@@ -105,6 +155,14 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
   // Arrays de ayuda para el renderizado del grid
   const celdasVacias = Array.from({ length: primerDiaDelMes });
   const celdasDias = Array.from({ length: diasEnMes }, (_, i) => i + 1);
+  const username = usuario?.username || 'usuario';
+  const postsCount = Number(usuario?.posts_count) || 0;
+  const followerCount = Number(usuario?.follower_count) || 0;
+  const followingCount = Number(usuario?.following_count) || 0;
+  const rachaActual = Number(usuario?.streak) || 0;
+  const etiquetasNombre = etiquetas
+    .map((etiqueta) => etiqueta?.name)
+    .filter(Boolean);
 
   return (
     <div className="hb-screen perfil-screen">
@@ -130,22 +188,33 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
           
           <div className="perfil-datos">
             <div className="perfil-nombres">
-              {/* <h2>{usuario?.nombre}</h2> */}
-              {/* <span>@{usuario?.username}</span> */}
-              <h2>Juanjo23</h2>
-              <span>@juanjo23</span>
+              <h2>{username}</h2>
+              <span>@{username}</span>
             </div>
-            <button className="hb-btn hb-btn--primary btn-seguir">Seguir</button>
+            <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
           </div>
         </div>
 
         {/* ── Estadísticas ── */}
         <div className="perfil-stats">
-          <span className="stat-tag">⚡ 12 días</span>
-          <span className="stat-tag">🏃 Deporte</span>
-          <span className="stat-tag">🖼️ 69 Posts</span>
-          <span className="stat-tag">👥 12.435 Seguidores</span>
-          <span className="stat-tag">👥 453 Siguiendo</span>
+          {perfilCargando ? (
+            <span className="stat-tag">Cargando perfil...</span>
+          ) : (
+            <>
+              <span className="stat-tag">⚡ {rachaActual} días</span>
+              <span className="stat-tag">🖼️ {postsCount} Posts</span>
+              <span className="stat-tag">👥 {followerCount} Seguidores</span>
+              <span className="stat-tag">👥 {followingCount} Siguiendo</span>
+              {etiquetasNombre.length ? (
+                etiquetasNombre.map((nombre, index) => (
+                  <span key={`${nombre}-${index}`} className="stat-tag">#{nombre}</span>
+                ))
+              ) : (
+                <span className="stat-tag">Sin etiquetas</span>
+              )}
+            </>
+          )}
+          {!!perfilError && <span className="stat-tag">{perfilError}</span>}
         </div>
       </header>
 
