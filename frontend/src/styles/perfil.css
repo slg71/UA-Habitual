@@ -165,10 +165,24 @@
   flex-direction: column;
 }
 
+.perfil-post--sin-img {
+  min-height: 120px;
+  border: 1px solid #e7e2d8;
+}
+
 .perfil-post img {
   width: 100%;
+  max-height: 280px;
   object-fit: cover;
   display: block;
+}
+
+.perfil-empty-state {
+  column-span: all;
+  text-align: center;
+  color: var(--hb-brown-mid);
+  font-weight: 600;
+  margin: 8px 0 16px;
 }
 
 .post-footer {

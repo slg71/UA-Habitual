@@ -8,6 +8,7 @@ const {
     getFollowingPosts
 } = require('../controllers/postsController');
 const verifyToken = require('../middleware/verifyToken');
+const uploadPostMedia = require('../middleware/uploadPostMedia');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/posts/feed/following', verifyToken, getFollowingPosts);
 router.get('/posts/:id', getPostById);
 router.get('/community/:community_id/posts', getPostsByCommunity);
 
-router.post('/posts', verifyToken, createPost);
+router.post('/posts', verifyToken, uploadPostMedia.single('media'), createPost);
 
 router.delete('/posts/:id', verifyToken, deletePost);
 

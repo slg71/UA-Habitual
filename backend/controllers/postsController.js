@@ -3,6 +3,15 @@ const db = require('../config/db');
 const createPost = (req, res) => {
     const { content, community_id } = req.body || {};
     const userId = req.user.id;
+    const mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : null;
+    const mediaType = req.file?.mimetype?.startsWith('image/') ? 'image' : null;
+    const mediaMetadata = req.file
+        ? JSON.stringify({
+            mime_type: req.file.mimetype,
+            original_name: req.file.originalname,
+            size: req.file.size
+        })
+        : null;
 
     if (!content || !community_id) {
         return res.status(400).json({
@@ -17,14 +26,66 @@ const createPost = (req, res) => {
             return res.status(403).json({ error: 'No estás unido a esta comunidad' });
         }
 
-        const query = 'INSERT INTO posts (user_id, community_id, content) VALUES (?, ?, ?)';
-        db.execute(query, [userId, community_id, content], (err, result) => {
-            if (err) {
+        db.beginTransaction((txErr) => {
+            if (txErr) {
                 return res.status(500).json({ error: 'Error al crear post' });
             }
-            return res.status(201).json({
-                message: 'Post creado con éxito',
-                postId: result.insertId
+
+            const insertPostQuery = 'INSERT INTO posts (user_id, community_id, content) VALUES (?, ?, ?)';
+            db.execute(insertPostQuery, [userId, community_id, content], (err, result) => {
+                if (err) {
+                    return db.rollback(() => {
+                        return res.status(500).json({ error: 'Error al crear post' });
+                    });
+                }
+
+                if (!mediaUrl) {
+                    return db.commit((commitErr) => {
+                        if (commitErr) {
+                            return db.rollback(() => {
+                                return res.status(500).json({ error: 'Error al crear post' });
+                            });
+                        }
+
+                        return res.status(201).json({
+                            message: 'Post creado con éxito',
+                            postId: result.insertId,
+                            media_url: null
+                        });
+                    });
+                }
+
+                const insertMediaQuery = 'INSERT INTO media (type, url, metadata) VALUES (?, ?, ?)';
+                db.execute(insertMediaQuery, [mediaType, mediaUrl, mediaMetadata], (mediaErr, mediaResult) => {
+                    if (mediaErr) {
+                        return db.rollback(() => {
+                            return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
+                        });
+                    }
+
+                    const linkMediaQuery = 'INSERT INTO post_media (post_id, media_id) VALUES (?, ?)';
+                    db.execute(linkMediaQuery, [result.insertId, mediaResult.insertId], (linkErr) => {
+                        if (linkErr) {
+                            return db.rollback(() => {
+                                return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
+                            });
+                        }
+
+                        return db.commit((commitErr) => {
+                            if (commitErr) {
+                                return db.rollback(() => {
+                                    return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
+                                });
+                            }
+
+                            return res.status(201).json({
+                                message: 'Post creado con éxito',
+                                postId: result.insertId,
+                                media_url: mediaUrl
+                            });
+                        });
+                    });
+                });
             });
         });
     });
@@ -36,10 +97,13 @@ const getPostsByCommunity = (req, res) => {
         SELECT 
             p.id, p.user_id, p.content, p.created_at,
             u.username, u.score, u.streak,
+            MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
         JOIN users u ON u.id = p.user_id
+        LEFT JOIN post_media pm ON pm.post_id = p.id
+        LEFT JOIN media m ON m.id = pm.media_id
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments c ON c.post_id = p.id
         WHERE p.community_id = ?
@@ -61,10 +125,13 @@ const getPostById = (req, res) => {
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.username, u.score, u.streak,
+            MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
         JOIN users u ON u.id = p.user_id
+        LEFT JOIN post_media pm ON pm.post_id = p.id
+        LEFT JOIN media m ON m.id = pm.media_id
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments c ON c.post_id = p.id
         WHERE p.id = ?
@@ -113,11 +180,14 @@ const getPostsForUser = (req, res) => {
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.username, u.score, u.streak,
             c.name as community_name,
+            MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
         JOIN users u ON u.id = p.user_id
         JOIN communities c ON c.id = p.community_id
+        LEFT JOIN post_media pm ON pm.post_id = p.id
+        LEFT JOIN media m ON m.id = pm.media_id
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments com ON com.post_id = p.id
         WHERE p.user_id = ?
@@ -140,12 +210,15 @@ const getFollowingPosts = (req, res) => {
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.username, u.score, u.streak,
             c.name as community_name,
+            MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
         JOIN users u ON u.id = p.user_id
         JOIN communities c ON c.id = p.community_id
         JOIN follows f ON f.following_id = p.user_id
+        LEFT JOIN post_media pm ON pm.post_id = p.id
+        LEFT JOIN media m ON m.id = pm.media_id
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments com ON com.post_id = p.id
         WHERE f.follower_id = ?

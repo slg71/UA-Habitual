@@ -17,44 +17,6 @@ import '../styles/perfil.css';
 //   fetch('/api/perfil/objetivos').then(r => r.json()).then(setObjetivos);
 // }, []);
 
-// ── Datos estáticos temporales (Borrar al integrar la BD) ──
-const mockPosts = [
-  {
-    id: 1,
-    url: 'https://images.unsplash.com/photo-1552508744-1696d4464960?w=600',
-    descripcion: 'Buen día para salir a correr por la playa',
-    fecha: '14 de febrero de 2026',
-    likes: 87,
-    autorAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100',
-    autorUsername: 'juanjo23',
-    comentarios: [
-      { user: 'ana_runner01', text: '¡Qué buena pinta tiene ese circuito!' }
-    ]
-  },
-  {
-    id: 2,
-    url: 'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=600',
-    descripcion: 'Ya soy cinturón negro, ¡A por nuevos retos!',
-    fecha: '10 de febrero de 2026',
-    likes: 120,
-    autorAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100',
-    autorUsername: 'juanjo23',
-    comentarios: []
-  },
-  {
-    id: 3,
-    url: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600',
-    descripcion: 'Tarde de composición acústica 🎸',
-    fecha: '5 de enero de 2026',
-    likes: 45,
-    autorAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100',
-    autorUsername: 'juanjo23',
-    comentarios: [
-      { user: 'music_lover', text: 'Sube un vídeo tocando algo!!' }
-    ]
-  }
-];
-
 const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const diasSemana = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -65,7 +27,9 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
   const [postSeleccionado, setPostSeleccionado] = useState(null);
   const [usuario, setUsuario] = useState(null);
   const [etiquetas, setEtiquetas] = useState([]);
+  const [postsUsuario, setPostsUsuario] = useState([]);
   const [perfilCargando, setPerfilCargando] = useState(true);
+  const [postsCargando, setPostsCargando] = useState(true);
   const [perfilError, setPerfilError] = useState('');
 
   // ── Lógica del Calendario de Rachas ──
@@ -80,6 +44,7 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
     if (!token) {
       setPerfilError('No hay sesión activa.');
       setPerfilCargando(false);
+      setPostsCargando(false);
       return;
     }
 
@@ -90,15 +55,18 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
     const cargarPerfil = async () => {
       try {
         setPerfilCargando(true);
+        setPostsCargando(true);
         setPerfilError('');
 
-        const [profileRes, communitiesRes] = await Promise.all([
+        const [profileRes, communitiesRes, postsRes] = await Promise.all([
           fetch('/api/profile', { headers }),
-          fetch('/api/user/communities', { headers })
+          fetch('/api/user/communities', { headers }),
+          fetch('/api/posts/user', { headers })
         ]);
 
         const profileData = await profileRes.json();
         const communitiesData = await communitiesRes.json();
+        const postsData = await postsRes.json();
 
         if (!profileRes.ok) {
           throw new Error(profileData?.error || 'No se pudo cargar el perfil.');
@@ -108,12 +76,18 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
           throw new Error(communitiesData?.error || 'No se pudieron cargar las etiquetas.');
         }
 
+        if (!postsRes.ok) {
+          throw new Error(postsData?.error || 'No se pudieron cargar tus publicaciones.');
+        }
+
         setUsuario(profileData);
         setEtiquetas(Array.isArray(communitiesData) ? communitiesData : []);
+        setPostsUsuario(Array.isArray(postsData) ? postsData : []);
       } catch (error) {
         setPerfilError(error.message || 'Error al cargar los datos del perfil.');
       } finally {
         setPerfilCargando(false);
+        setPostsCargando(false);
       }
     };
 
@@ -163,6 +137,19 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
   const etiquetasNombre = etiquetas
     .map((etiqueta) => etiqueta?.name)
     .filter(Boolean);
+  const resolverUrlMedia = (mediaUrl) => {
+    if (!mediaUrl) return '';
+    if (/^https?:\/\//i.test(mediaUrl)) return mediaUrl;
+    return `/api${mediaUrl}`;
+  };
+  const formatearFecha = (fechaIso) => {
+    if (!fechaIso) return '';
+    return new Date(fechaIso).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="hb-screen perfil-screen">
@@ -236,22 +223,27 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
 
       {/* ── Galería (Feed del perfil) ── */}
       <section className="perfil-galeria">
-        {mockPosts.map(post => (
-          <div 
-            key={post.id} 
-            className="perfil-post" 
-            onClick={() => setPostSeleccionado(post)} 
+        {postsCargando && <p className="perfil-empty-state">Cargando publicaciones...</p>}
+        {!postsCargando && !postsUsuario.length && (
+          <p className="perfil-empty-state">Aun no tienes publicaciones.</p>
+        )}
+        {!postsCargando && postsUsuario.map(post => (
+          <div
+            key={post.id}
+            className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+            onClick={() => setPostSeleccionado(post)}
             style={{ cursor: 'pointer' }}
           >
-            <img src={post.url} alt="Post" />
-            {post.descripcion && (
-              <div className="post-footer-mini">
-                <p>{post.descripcion}</p>
-                <span className="post-meta">
-                  {post.fecha} <span className="like-icon">♡ {post.likes}</span>
-                </span>
-              </div>
+            {post.media_url && (
+              <img src={resolverUrlMedia(post.media_url)} alt="Publicacion" />
             )}
+            <div className="post-footer-mini">
+              <p>{post.content}</p>
+              <span className="post-meta">
+                {formatearFecha(post.created_at)}
+                <span className="like-icon">♡ {post.likes_count || 0}</span>
+              </span>
+            </div>
           </div>
         ))}
       </section>
@@ -262,30 +254,38 @@ export default function PerfilScreen( { onExplorar, onInicio, onPerfil, onCrear 
           <div className="post-detail-card" onClick={e => e.stopPropagation()}>
             
             <div className="post-detail-header">
-              <img src={postSeleccionado.autorAvatar} alt="Avatar" className="post-detail-avatar" />
-              <span className="post-detail-username">{postSeleccionado.autorUsername}</span>
-              <button className="post-detail-btn-seguir">Seguir</button>
+              <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" />
+              <span className="post-detail-username">{postSeleccionado.username || username}</span>
+              <button className="post-detail-btn-seguir">Tu post</button>
             </div>
 
-            <img src={postSeleccionado.url} alt="Publicación" className="post-detail-img" />
+            {postSeleccionado.media_url && (
+              <img
+                src={resolverUrlMedia(postSeleccionado.media_url)}
+                alt="Contenido multimedia"
+                className="post-detail-img"
+              />
+            )}
 
             <div className="post-detail-footer">
               <div className="post-detail-likes">
                 <span className="heart-icon">♡</span>
-                <span className="like-count">{postSeleccionado.likes}</span>
+                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
               </div>
               
               <div className="post-detail-caption">
-                <strong>{postSeleccionado.autorUsername}</strong> {postSeleccionado.descripcion}
+                <strong>{postSeleccionado.username || username}</strong> {postSeleccionado.content}
               </div>
 
-              {postSeleccionado.comentarios?.map((c, i) => (
-                <div key={i} className="post-detail-comment">
-                  <strong>{c.user}</strong> {c.text}
-                </div>
-              ))}
+              <div className="post-detail-comment">
+                <strong>Comunidad:</strong> {postSeleccionado.community_name || 'Sin comunidad'}
+              </div>
 
-              <div className="post-detail-date">{postSeleccionado.fecha}</div>
+              <div className="post-detail-comment">
+                <strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}
+              </div>
+
+              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
 
           </div>

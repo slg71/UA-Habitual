@@ -79,6 +79,18 @@
 .crear-botones { display: flex; gap: 14px; }
 .crear-btn { flex: 1; border-radius: 10px; }
 
+.crear-feedback {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hb-brown);
+  text-align: center;
+}
+
+.crear-feedback--error {
+  color: #b42318;
+  font-weight: 600;
+}
+
 .crear-publicado { justify-content: center; align-items: center; }
 
 .crear-publicado-card {

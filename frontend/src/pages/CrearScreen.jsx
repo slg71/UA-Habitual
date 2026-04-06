@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/crear.css'
 
@@ -20,18 +20,116 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil }) {
   const [comentario, setComentario] = useState('')
   const [archivo, setArchivo]       = useState(null)
   const [publicado, setPublicado]   = useState(false)
+  const [actividades, setActividades] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadingActividades, setLoadingActividades] = useState(true)
+  const [error, setError] = useState('')
 
-  function publicar() {
-    if (!actividad) { alert('Selecciona una actividad'); return }
-    // TODO: reemplazar por llamada a la API cuando conectes la BD
-    setPublicado(true)
-    setTimeout(() => { setPublicado(false); onPerfil() }, 1000)
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      setError('No hay sesion activa. Inicia sesion para publicar.')
+      setLoadingActividades(false)
+      return
+    }
+
+    const cargarComunidades = async () => {
+      try {
+        setLoadingActividades(true)
+        setError('')
+
+        const response = await fetch('/api/user/communities', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data?.error || 'No se pudieron cargar tus actividades.')
+        }
+
+        setActividades(Array.isArray(data) ? data : [])
+      } catch (err) {
+        setError(err.message || 'No se pudieron cargar tus actividades.')
+      } finally {
+        setLoadingActividades(false)
+      }
+    }
+
+    cargarComunidades()
+  }, [])
+
+  async function publicar() {
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      setError('No hay sesion activa. Inicia sesion para publicar.')
+      return
+    }
+
+    if (!actividad) {
+      setError('Selecciona una actividad.')
+      return
+    }
+
+    if (!comentario.trim()) {
+      setError('Escribe un comentario para la publicacion.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+
+      const formData = new FormData()
+      formData.append('content', comentario.trim())
+      formData.append('community_id', String(Number(actividad)))
+      if (archivo) {
+        formData.append('media', archivo)
+      }
+
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      let data = null
+      try {
+        data = await response.json()
+      } catch {
+        data = null
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'No se pudo crear la publicacion.')
+      }
+
+      setPublicado(true)
+      setTimeout(() => {
+        setPublicado(false)
+        setActividad('')
+        setComentario('')
+        setArchivo(null)
+        onPerfil()
+      }, 1000)
+    } catch (err) {
+      setError(err.message || 'No se pudo crear la publicacion.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function cancelar() {
     setActividad('')
     setComentario('')
     setArchivo(null)
+    setError('')
     onPerfil()
   }
 
@@ -75,14 +173,12 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil }) {
           <h2 className="crear-titulo">Añadir Publicación</h2>
 
           <select className="crear-select" value={actividad} onChange={e => setActividad(e.target.value)}>
-            <option value="">Seleccionar Actividad ∨</option>
-            {/* Descomentar cuando conectes la BD:
-            {actividades.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)} */}
-            <option value="running">Running</option>
-            <option value="yoga">Yoga</option>
-            <option value="gym">Gimnasio</option>
-            <option value="ciclismo">Ciclismo</option>
+            <option value="">Seleccionar Actividad</option>
+            {actividades.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
           </select>
+          {loadingActividades && <p className="crear-feedback">Cargando actividades...</p>}
 
           <textarea
             className="crear-textarea"
@@ -93,13 +189,16 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil }) {
 
           <label className="crear-archivo">
             {archivo ? archivo.name : 'Añadir archivo multimedia'}
-            <input type="file" accept="image/*,video/*,audio/*" style={{ display: 'none' }} onChange={e => setArchivo(e.target.files[0])} />
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => setArchivo(e.target.files[0])} />
           </label>
 
           <div className="crear-botones">
-            <button className="hb-btn hb-btn--secondary crear-btn" onClick={cancelar}>Cancelar</button>
-            <button className="hb-btn hb-btn--primary crear-btn"   onClick={publicar}>Publicar</button>
+            <button className="hb-btn hb-btn--secondary crear-btn" onClick={cancelar} disabled={loading}>Cancelar</button>
+            <button className="hb-btn hb-btn--primary crear-btn" onClick={publicar} disabled={loading || loadingActividades}>
+              {loading ? 'Publicando...' : 'Publicar'}
+            </button>
           </div>
+          {!!error && <p className="crear-feedback crear-feedback--error">{error}</p>}
 
         </div>
       </div>

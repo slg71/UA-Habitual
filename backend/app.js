@@ -14,9 +14,12 @@ const followsRoutes = require('./routes/followsRoutes');
 const likesRoutes = require('./routes/likesRoutes');
 
 const app = express();
+const uploadsPath = path.resolve(__dirname, 'uploads');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(uploadsPath));
+app.use('/api/uploads', express.static(uploadsPath));
 
 // Sin prefijo /api
 app.use(authRoutes);
@@ -37,6 +40,25 @@ app.use('/api', commentsRoutes);
 app.use('/api', goalsRoutes);
 app.use('/api', followsRoutes);
 app.use('/api', likesRoutes);
+
+app.use((err, _req, res, next) => {
+    if (!err) {
+        return next();
+    }
+
+    if (err.name === 'MulterError') {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'La imagen supera el tamaño máximo permitido (10MB).' });
+        }
+        return res.status(400).json({ error: 'Error al procesar el archivo multimedia.' });
+    }
+
+    if (err.message === 'Solo se permiten imagenes.') {
+        return res.status(400).json({ error: err.message });
+    }
+
+    return next(err);
+});
 
 const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
 
