@@ -478,3 +478,49 @@
   margin: 0 0 6px;
   color: var(--hb-text);
 }
+
+/* ── Formulario nuevo objetivo (dentro del modal) ── */
+.objetivo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--hb-green-lt);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.objetivo-form .hb-btn {
+  padding: 10px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.objetivo-select {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--hb-font-body);
+  color: var(--hb-text);
+  background: var(--hb-green-lt);
+  border: 2px solid var(--hb-green);
+  border-radius: var(--hb-radius-input);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.objetivo-error {
+  font-size: 12px;
+  color: #c0392b;
+  margin: 0;
+  font-weight: 600;
+}
+
+.objetivo-vacio {
+  font-size: 13px;
+  color: #888;
+  padding: 8px 0;
+  margin: 0;
+}
