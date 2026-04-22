@@ -7,9 +7,16 @@ import ExplorarScreen from '../pages/ExplorarScreen'
 import PerfilScreen from '../pages/PerfilScreen'
 import ConfiguracionScreen from '../pages/ConfiguracionScreen'
 import CrearScreen from '../pages/CrearScreen'
+import ComunidadScreen from '../pages/ComunidadScreen'
 
 export default function App() {
   const [screen, setScreen] = useState('welcome')
+  const [comunidadActual, setComunidadActual] = useState(null) 
+
+  const irAComunidad = (comunidad) => {                         
+    setComunidadActual(comunidad)
+    setScreen('comunidad')
+  }
 
   return (
     <>
@@ -38,6 +45,7 @@ export default function App() {
           onPerfil={() => setScreen('perfil')}
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
+          onComunidad={irAComunidad} 
         />
       )}
       {screen === 'explorar' && (
@@ -47,6 +55,7 @@ export default function App() {
           onPerfil={() => setScreen('perfil')}
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
+          onComunidad={irAComunidad}
         />
       )}
       {screen === 'perfil' && (
@@ -73,6 +82,16 @@ export default function App() {
           onExplorar={() => setScreen('explorar')}
           onPerfil={() => setScreen('perfil')}
           onConfiguracion={() => setScreen('configuracion')}
+        />
+      )}
+      {screen === 'comunidad' && (        
+        <ComunidadScreen
+          comunidad={comunidadActual}
+          onBack={() => setScreen('inicio')}
+          onInicio={() => setScreen('inicio')}
+          onExplorar={() => setScreen('explorar')}
+          onPerfil={() => setScreen('perfil')}
+          onCrear={() => setScreen('crear')}
         />
       )}
     </>
