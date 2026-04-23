@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/configuracion.css'
+import BottomNav from '../components/BottomNav'
 
 // Ejemplo con API:
 // const guardar = () => {
@@ -104,24 +105,12 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
       </div>
 
       {/* ── Nav inferior ── */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item" onClick={onInicio}>
-          <span>⌂</span>
-          <span>Inicio</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onExplorar}>
-          <span>🔍</span>
-          <span>Búsqueda</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onPerfil}>
-          <span>👤</span>
-          <span>Perfil</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onCrear}>
-          <span>＋</span>
-          <span>Crear</span>
-        </button>
-      </nav>
+      <BottomNav
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
 
       {/* ── Modal eliminar cuenta ── */}
       {modalEliminar && (

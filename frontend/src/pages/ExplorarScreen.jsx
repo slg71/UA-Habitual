@@ -2,6 +2,7 @@ import '../styles/habitual.css'
 import '../styles/inicio.css'
 import PhotoCollage from '../components/PhotoCollage'
 import logo from '../assets/logo.png'
+import BottomNav from '../components/BottomNav'
 
 // Ejemplo con API:
 // const [comunidades, setComunidades] = useState([])
@@ -50,24 +51,13 @@ export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConf
       </section>
 
       {/* ── Nav inferior ── */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item" onClick={onInicio}>
-          <span>⌂</span>
-          <span>Inicio</span>
-        </button>
-        <button className="inicio-nav-item inicio-nav-item--active" onClick={onExplorar}>
-          <span>🔍</span>
-          <span>Explorar</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onPerfil}>
-          <span>👤</span>
-          <span>Perfil</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onCrear}>
-          <span>＋</span>
-          <span>Crear</span>
-        </button>
-      </nav>
+      <BottomNav
+        active="explorar"
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
 
     </div>
   )

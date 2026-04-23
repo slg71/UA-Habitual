@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
 import '../styles/comunidad.css'
+import BottomNav from '../components/BottomNav'
 
 //IMAGENES
 import imgChino from '../assets/comunidades/chino.jpg'
@@ -181,20 +182,12 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
       </div>
 
       {/* Nav */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item" onClick={onInicio}>
-          <span>⌂</span><span>Inicio</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onExplorar}>
-          <span>🔍</span><span>Explorar</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onPerfil}>
-          <span>👤</span><span>Perfil</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onCrear}>
-          <span>＋</span><span>Crear</span>
-        </button>
-      </nav>
+      <BottomNav
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
     </div>
   )
 }
