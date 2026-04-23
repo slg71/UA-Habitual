@@ -14,7 +14,7 @@
     "build:frontend": "npm --prefix frontend run build",
     "start:backend": "node backend/app.js",
     "prod": "npm run build:frontend && npm run start:backend",
-    "start": "node backend/app.js",
+    "start": "npm install && node backend/app.js",
     "install:all": "npm install && npm --prefix frontend install"
   },
   "dependencies": {
