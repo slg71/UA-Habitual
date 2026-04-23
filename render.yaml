@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ua-habitual
+    runtime: node
+    buildCommand: npm install && npm run build:frontend
+    startCommand: npm run start:backend
+    envVars:
+      - key: NODE_ENV
+        value: production
