@@ -1,13 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
+import '../styles/perfil.css'
 import logo from '../assets/logo.png'
+import { getImagenComunidad } from '../components/comunidadImagenes'
 
 const API_BASE = '/api'
+
+const formatearFecha = iso =>
+  iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
+
+const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
 export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad }) {
   const [misComunidades, setMisComunidades] = useState([])
   const [todasComunidades, setTodasComunidades] = useState([])
+  const [feedPosts, setFeedPosts] = useState([])
+  const [cargandoFeed, setCargandoFeed] = useState(true)
+  const [postSeleccionado, setPostSeleccionado] = useState(null)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
@@ -16,12 +26,42 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) return
+
     fetch(`${API_BASE}/user/communities`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.ok ? r.json() : [])
-      .then(data => setMisComunidades(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .then(async (comunidades) => {
+        const lista = Array.isArray(comunidades) ? comunidades : []
+        setMisComunidades(lista)
+
+        if (lista.length === 0) {
+          setCargandoFeed(false)
+          return
+        }
+
+        const resultados = await Promise.allSettled(
+          lista.map(c =>
+            fetch(`${API_BASE}/community/${c.id}/posts`)
+              .then(r => r.ok ? r.json() : [])
+              .then(posts =>
+                (Array.isArray(posts) ? posts : []).map(p => ({
+                  ...p,
+                  community_name: c.name
+                }))
+              )
+          )
+        )
+
+        const todos = resultados
+          .filter(r => r.status === 'fulfilled')
+          .flatMap(r => r.value)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+        setFeedPosts(todos)
+        setCargandoFeed(false)
+      })
+      .catch(() => setCargandoFeed(false))
   }, [])
 
   const abrirModal = async () => {
@@ -70,6 +110,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
         <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
+      {/* Comunidades */}
       <section className="inicio-section">
         <h2 className="inicio-section-title">
           Tus comunidades
@@ -85,7 +126,11 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
             misComunidades.map(c => (
               <div key={c.id} className="inicio-comunidad" onClick={() => onComunidad(c)} style={{ cursor: 'pointer' }}>
                 <div className="inicio-comunidad-avatar">
-                  {c.name?.[0]?.toUpperCase()}
+                  <img
+                    src={getImagenComunidad(c.name)}
+                    alt={c.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                  />
                 </div>
                 <span className="inicio-comunidad-nombre">{c.name}</span>
               </div>
@@ -94,8 +139,120 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
         </div>
       </section>
 
-      <section className="inicio-feed" />
+      {/* Feed */}
+      <section className="inicio-section">
+        <h2 className="inicio-section-title">Publicaciones</h2>
 
+        {cargandoFeed ? (
+          <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>Cargando publicaciones…</p>
+        ) : feedPosts.length === 0 ? (
+          <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>
+            Únete a comunidades para ver sus publicaciones aquí.
+          </p>
+        ) : (
+          <div className="perfil-galeria" style={{ paddingBottom: 0 }}>
+            {feedPosts.map(post => (
+              <div
+                key={`${post.id}-${post.community_name}`}
+                className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+                onClick={() => setPostSeleccionado(post)}
+                style={{ cursor: 'pointer' }}
+              >
+                {post.media_url ? (
+                  <img
+                    src={parsearUrl(post.media_url)}
+                    alt="Post"
+                    onError={e => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                {post.media_url ? (
+                  <div style={{
+                    display: 'none', alignItems: 'center', justifyContent: 'center',
+                    padding: '20px 12px', background: 'var(--hb-green-lt)',
+                    color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
+                  }}>
+                    📷 No se ha podido cargar la foto
+                  </div>
+                ) : null}
+                <div className="post-footer-mini">
+                  <p>{post.content}</p>
+                  <span className="post-meta">
+                    {formatearFecha(post.created_at)}
+                    <span className="like-icon">♡ {post.likes_count || 0}</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Modal detalle post */}
+      {postSeleccionado && (
+        <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
+          <div className="post-detail-card" onClick={e => e.stopPropagation()}>
+            <div className="post-detail-header">
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--hb-green-lt)', border: '2px solid #fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: 14, color: 'var(--hb-green-dk)', flexShrink: 0
+              }}>
+                {postSeleccionado.username?.[0]?.toUpperCase()}
+              </div>
+              <span className="post-detail-username">{postSeleccionado.username}</span>
+              {postSeleccionado.community_name && (
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                  #{postSeleccionado.community_name}
+                </span>
+              )}
+            </div>
+            {postSeleccionado.media_url ? (
+              <img
+                src={parsearUrl(postSeleccionado.media_url)}
+                alt="Contenido"
+                className="post-detail-img"
+                onError={e => {
+                  e.target.style.display = 'none'
+                  e.target.nextSibling.style.display = 'flex'
+                }}
+              />
+            ) : null}
+            {postSeleccionado.media_url ? (
+              <div style={{
+                display: 'none', alignItems: 'center', justifyContent: 'center',
+                padding: '32px 16px', background: 'var(--hb-green-lt)',
+                color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center'
+              }}>
+                📷 No se ha podido cargar la foto
+              </div>
+            ) : null}
+            <div className="post-detail-footer">
+              <div className="post-detail-likes">
+                <span className="heart-icon">♡</span>
+                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
+              </div>
+              <div className="post-detail-caption">
+                <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}
+              </div>
+              {postSeleccionado.community_name && (
+                <div className="post-detail-comment">
+                  <strong>Comunidad:</strong> {postSeleccionado.community_name}
+                </div>
+              )}
+              <div className="post-detail-comment">
+                <strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}
+              </div>
+              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nav */}
       <nav className="inicio-nav">
         <button className="inicio-nav-item inicio-nav-item--active" onClick={onInicio}>
           <span>⌂</span><span>Inicio</span>
@@ -111,6 +268,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
         </button>
       </nav>
 
+      {/* Modal explorar comunidades */}
       {modalAbierto && (
         <div
           className="modal-overlay"
