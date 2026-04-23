@@ -9,87 +9,45 @@ import imgChino from '../assets/comunidades/chino.jpg'
 import imgAjedrez from '../assets/comunidades/ajdrz.jpg'
 import imgDiseno from '../assets/comunidades/dg.jpg'
 
+import '../styles/perfil.css'
+import { getImagenComunidad } from '../components/comunidadImagenes'
+
 
 const API_BASE = '/api'
 
-const COMUNIDAD_IMAGENES = {
-  ajedrez:          imgAjedrez,
-  astronomia:       'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600',
-  baile:            'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=600',
-  boxeo:            'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600',
-  chino:            imgChino,
-  ciclismo:         'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=600',
-  cine:             'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600',
-  cocina:           'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600',
-  coser:            'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600',
-  diseno_grafico: imgDiseno,
-  escalada:         'https://images.unsplash.com/photo-1522163182402-834f871fd851?w=600',
-  escritura:        'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600',
-  fotografia:       'https://images.unsplash.com/photo-1452780212940-6f5c0d14d848?w=600',
-  guitarra:         'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600',
-  holandes:         'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=600',
-  ingles:           'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600',
-  jardineria:       'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600',
-  karate:           'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=600',
-  literatura:       'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600',
-  meditacion:       'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600',
-  pintura:          'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600',
-  programacion:     'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600',
-  running:          'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600',
-  yoga:             'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600',
+const formatearTitulo = (str = '') =>
+  str.split(/[\s_]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+
+const getTituloComunidad = (name) => {
+  if (!name) return ''
+  switch (name.toLowerCase()) {
+    case 'diseno_grafico': return 'Diseño Gráfico'
+    default: return formatearTitulo(name)
+  }
 }
 
-const IMAGEN_FALLBACK = 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600'
+const formatearFecha = iso =>
+  iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
-// Normaliza el nombre quitando tildes y pasándolo a minúsculas
-const normalizarNombre = (str = '') =>
-  str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // quita tildes
-    .replace(/\s+/g, '_')            // espacios → _
-    .trim()
-
-// Formatea el nombre para mostrarlo: primera letra de cada palabra en mayúscula
-const formatearTitulo = (str = '') =>
-  str
-    .split(/[\s_]+/)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
-
-
+const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
 export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplorar, onPerfil, onCrear }) {
   const [miembro, setMiembro] = useState(true)
   const [numMiembros, setNumMiembros] = useState(null)
   const [posts, setPosts] = useState([])
   const [cargandoPosts, setCargandoPosts] = useState(true)
+  const [postSeleccionado, setPostSeleccionado] = useState(null)
 
-  const nombreKey = normalizarNombre(comunidad?.name)
-  const imagenHero = COMUNIDAD_IMAGENES[nombreKey] || IMAGEN_FALLBACK
-
-
-  const getTituloComunidad = (name) => {
-  if (!name) return ''
-
-  switch (name.toLowerCase()) {
-    case 'diseno_grafico':
-      return 'Diseño Gráfico'
-    default:
-      return formatearTitulo(name)
-  }
-}
+  const imagenHero = getImagenComunidad(comunidad?.name)
 
   useEffect(() => {
     if (!comunidad?.id) return
 
-    // Cargar número de miembros
     fetch(`${API_BASE}/communities/${comunidad.id}/members`)
       .then(r => r.ok ? r.json() : [])
       .then(data => setNumMiembros(Array.isArray(data) ? data.length : 0))
       .catch(() => setNumMiembros(0))
 
-    // Cargar posts de la comunidad
     fetch(`${API_BASE}/community/${comunidad.id}/posts`)
       .then(r => r.ok ? r.json() : [])
       .then(data => setPosts(Array.isArray(data) ? data : []))
@@ -100,7 +58,6 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   const toggleMiembro = async () => {
     const token = localStorage.getItem('token')
     if (!token) return
-
     if (miembro) {
       await fetch(`${API_BASE}/communities/${comunidad.id}/leave`, {
         method: 'DELETE',
@@ -123,29 +80,16 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
 
       {/* Hero */}
       <div className="comunidad-hero">
-        <img
-          src={imagenHero}
-          alt={comunidad?.name}
-          className="comunidad-hero-img"
-        />
+        <img src={imagenHero} alt={comunidad?.name} className="comunidad-hero-img" />
         <div className="comunidad-hero-overlay" />
-
         <button className="comunidad-back" onClick={onBack}>←</button>
-
         <div className="comunidad-hero-content">
-          <h1 className="comunidad-nombre">
-            {getTituloComunidad(comunidad?.name)}
-          </h1>
+          <h1 className="comunidad-nombre">{getTituloComunidad(comunidad?.name)}</h1>
           <div className="comunidad-meta">
-            {comunidad?.category && (
-              <span className="comunidad-tag">🏷 {comunidad.category}</span>
-            )}
-            {numMiembros !== null && (
-              <span className="comunidad-tag">👥 {numMiembros.toLocaleString()} Miembros</span>
-            )}
+            {comunidad?.category && <span className="comunidad-tag">🏷 {comunidad.category}</span>}
+            {numMiembros !== null && <span className="comunidad-tag">👥 {numMiembros.toLocaleString()} Miembros</span>}
           </div>
         </div>
-
         <button
           className={`comunidad-seguir-btn ${miembro ? 'siguiendo' : ''}`}
           onClick={toggleMiembro}
@@ -165,21 +109,100 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
         ) : posts.length === 0 ? (
           <p className="comunidad-empty">Aún no hay publicaciones en esta comunidad.</p>
         ) : (
-          <div className="comunidad-posts-grid">
+          <div className="perfil-galeria">
             {posts.map(post => (
-              <div key={post.id} className="comunidad-post-card">
-                <div className="comunidad-post-autor">
-                  <div className="comunidad-post-avatar">
-                    {post.username?.[0]?.toUpperCase()}
+              <div
+                key={post.id}
+                className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+                onClick={() => setPostSeleccionado(post)}
+                style={{ cursor: 'pointer' }}
+              >
+                {post.media_url ? (
+                  <img
+                    src={parsearUrl(post.media_url)}
+                    alt="Post"
+                    onError={e => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                {post.media_url ? (
+                  <div style={{
+                    display: 'none', alignItems: 'center', justifyContent: 'center',
+                    padding: '20px 12px', background: 'var(--hb-green-lt)',
+                    color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
+                  }}>
+                    📷 No se ha podido cargar la foto
                   </div>
-                  <span>{post.username}</span>
+                ) : null}
+                <div className="post-footer-mini">
+                  <p>{post.content}</p>
+                  <span className="post-meta">
+                    {formatearFecha(post.created_at)}
+                    <span className="like-icon">♡ {post.likes_count || 0}</span>
+                  </span>
                 </div>
-                <p className="comunidad-post-content">{post.content}</p>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal detalle post */}
+      {postSeleccionado && (
+        <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
+          <div className="post-detail-card" onClick={e => e.stopPropagation()}>
+            <div className="post-detail-header">
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--hb-green-lt)', border: '2px solid #fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: 14, color: 'var(--hb-green-dk)', flexShrink: 0
+              }}>
+                {postSeleccionado.username?.[0]?.toUpperCase()}
+              </div>
+              <span className="post-detail-username">{postSeleccionado.username}</span>
+            </div>
+            {postSeleccionado.media_url ? (
+              <img
+                src={parsearUrl(postSeleccionado.media_url)}
+                alt="Contenido"
+                className="post-detail-img"
+                onError={e => {
+                  e.target.style.display = 'none'
+                  e.target.nextSibling.style.display = 'flex'
+                }}
+              />
+            ) : null}
+            {postSeleccionado.media_url ? (
+              <div style={{
+                display: 'none', alignItems: 'center', justifyContent: 'center',
+                padding: '32px 16px', background: 'var(--hb-green-lt)',
+                color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center'
+              }}>
+                📷 No se ha podido cargar la foto
+              </div>
+            ) : null}
+            <div className="post-detail-footer">
+              <div className="post-detail-likes">
+                <span className="heart-icon">♡</span>
+                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
+              </div>
+              <div className="post-detail-caption">
+                <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}
+              </div>
+              <div className="post-detail-comment">
+                <strong>Comunidad:</strong> {getTituloComunidad(comunidad?.name)}
+              </div>
+              <div className="post-detail-comment">
+                <strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}
+              </div>
+              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Nav */}
       <BottomNav
