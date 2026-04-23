@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/crear.css'
+import BottomNav from '../components/BottomNav'
 
 // Ejemplo con API:
 // const publicar = () => {
@@ -15,7 +16,7 @@ import '../styles/crear.css'
 //   }).then(r => { if (r.ok) { setPublicado(true); setTimeout(() => onInicio(), 2000) } })
 // }
 
-export default function CrearScreen({ onInicio, onExplorar, onPerfil }) {
+export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear }) {
   const [actividad, setActividad]   = useState('')
   const [comentario, setComentario] = useState('')
   const [archivo, setArchivo]       = useState(null)
@@ -151,20 +152,13 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil }) {
     <div className="hb-screen inicio-screen">
 
       {/* ── Nav inferior ── */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item" onClick={onInicio}>
-          <span>⌂</span><span>Inicio</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onExplorar}>
-          <span>🔍</span><span>Búsqueda</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onPerfil}>
-          <span>👤</span><span>Perfil</span>
-        </button>
-        <button className="inicio-nav-item inicio-nav-item--active">
-          <span>＋</span><span>Crear</span>
-        </button>
-      </nav>
+      <BottomNav
+        active="crear"
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
 
       {/* ── Modal centrado ── */}
       <div className="crear-overlay">

@@ -3,6 +3,7 @@ import '../styles/habitual.css'
 import '../styles/inicio.css'
 import '../styles/perfil.css'
 import logo from '../assets/logo.png'
+import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 
 const API_BASE = '/api'
@@ -252,21 +253,13 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
         </div>
       )}
 
-      {/* Nav */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item inicio-nav-item--active" onClick={onInicio}>
-          <span>⌂</span><span>Inicio</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onExplorar}>
-          <span>🔍</span><span>Explorar</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onPerfil}>
-          <span>👤</span><span>Perfil</span>
-        </button>
-        <button className="inicio-nav-item" onClick={onCrear}>
-          <span>＋</span><span>Crear</span>
-        </button>
-      </nav>
+      <BottomNav
+        active="inicio"
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
 
       {/* Modal explorar comunidades */}
       {modalAbierto && (

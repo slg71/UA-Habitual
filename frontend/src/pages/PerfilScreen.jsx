@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import '../styles/habitual.css';
 import '../styles/inicio.css';
 import '../styles/perfil.css';
+import BottomNav from '../components/BottomNav';
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const DIAS_SEMANA = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -199,12 +200,13 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
       )}
 
       {/* NAVBAR INFERIOR */}
-      <nav className="inicio-nav">
-        <button className="inicio-nav-item" onClick={onInicio}><span>⌂</span><span>Inicio</span></button>
-        <button className="inicio-nav-item" onClick={onExplorar}><span>🔍</span><span>Explorar</span></button>
-        <button className="inicio-nav-item inicio-nav-item--active" onClick={onPerfil}><span>👤</span><span>Perfil</span></button>
-        <button className="inicio-nav-item" onClick={onCrear}><span>＋</span><span>Crear</span></button>
-      </nav>
+      <BottomNav
+        active="perfil"
+        onInicio={onInicio}
+        onExplorar={onExplorar}
+        onPerfil={onPerfil}
+        onCrear={onCrear}
+      />
     </div>
   );
 }
