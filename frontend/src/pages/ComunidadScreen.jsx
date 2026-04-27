@@ -4,14 +4,8 @@ import '../styles/inicio.css'
 import '../styles/comunidad.css'
 import BottomNav from '../components/BottomNav'
 
-//IMAGENES
-import imgChino from '../assets/comunidades/chino.jpg'
-import imgAjedrez from '../assets/comunidades/ajdrz.jpg'
-import imgDiseno from '../assets/comunidades/dg.jpg'
-
 import '../styles/perfil.css'
 import { getImagenComunidad } from '../components/comunidadImagenes'
-
 
 const API_BASE = '/api'
 
@@ -37,6 +31,7 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   const [posts, setPosts] = useState([])
   const [cargandoPosts, setCargandoPosts] = useState(true)
   const [postSeleccionado, setPostSeleccionado] = useState(null)
+  const [likesMap, setLikesMap] = useState({}) // { postId: { count, liked } }
 
   const imagenHero = getImagenComunidad(comunidad?.name)
 
@@ -50,10 +45,58 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
 
     fetch(`${API_BASE}/community/${comunidad.id}/posts`)
       .then(r => r.ok ? r.json() : [])
-      .then(data => setPosts(Array.isArray(data) ? data : []))
+      .then(data => {
+        const lista = Array.isArray(data) ? data : []
+        setPosts(lista)
+
+        // Precargar estado de likes
+        const token = localStorage.getItem('token')
+        if (token && lista.length > 0) {
+          Promise.allSettled(
+            lista.map(p =>
+              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+                .then(r => r.ok ? r.json() : { liked: false })
+                .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count || 0 }))
+            )
+          ).then(results => {
+            const mapa = {}
+            results.forEach(r => {
+              if (r.status === 'fulfilled') {
+                mapa[r.value.id] = { liked: r.value.liked, count: r.value.count }
+              }
+            })
+            setLikesMap(mapa)
+          })
+        }
+      })
       .catch(() => setPosts([]))
       .finally(() => setCargandoPosts(false))
   }, [comunidad?.id])
+
+  const toggleLike = async (post, e) => {
+    e.stopPropagation()
+    const token = localStorage.getItem('token')
+    if (!token) return
+    const id = post.id
+    const yaLiked = likesMap[id]?.liked ?? false
+    const countActual = likesMap[id]?.count ?? post.likes_count ?? 0
+
+    // Optimistic update
+    setLikesMap(prev => ({
+      ...prev,
+      [id]: { liked: !yaLiked, count: yaLiked ? countActual - 1 : countActual + 1 }
+    }))
+
+    await fetch(`${API_BASE}/posts/${id}/like`, {
+      method: yaLiked ? 'DELETE' : 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(() => {
+      // Revertir si falla
+      setLikesMap(prev => ({ ...prev, [id]: { liked: yaLiked, count: countActual } }))
+    })
+  }
 
   const toggleMiembro = async () => {
     const token = localStorage.getItem('token')
@@ -110,41 +153,54 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
           <p className="comunidad-empty">Aún no hay publicaciones en esta comunidad.</p>
         ) : (
           <div className="perfil-galeria">
-            {posts.map(post => (
-              <div
-                key={post.id}
-                className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
-                onClick={() => setPostSeleccionado(post)}
-                style={{ cursor: 'pointer' }}
-              >
-                {post.media_url ? (
-                  <img
-                    src={parsearUrl(post.media_url)}
-                    alt="Post"
-                    onError={e => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
-                ) : null}
-                {post.media_url ? (
-                  <div style={{
-                    display: 'none', alignItems: 'center', justifyContent: 'center',
-                    padding: '20px 12px', background: 'var(--hb-green-lt)',
-                    color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
-                  }}>
-                    📷 No se ha podido cargar la foto
+            {posts.map(post => {
+              const liked = likesMap[post.id]?.liked ?? false
+              const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0
+
+              return (
+                <div
+                  key={post.id}
+                  className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+                  onClick={() => setPostSeleccionado(post)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {post.media_url ? (
+                    <img
+                      src={parsearUrl(post.media_url)}
+                      alt="Post"
+                      onError={e => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  {post.media_url ? (
+                    <div style={{
+                      display: 'none', alignItems: 'center', justifyContent: 'center',
+                      padding: '20px 12px', background: 'var(--hb-green-lt)',
+                      color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
+                    }}>
+                      📷 No se ha podido cargar la foto
+                    </div>
+                  ) : null}
+                  <div className="post-footer-mini">
+                    {post.username && (
+                      <span className="post-autor">@{post.username}</span>
+                    )}
+                    <p>{post.content}</p>
+                    <span className="post-meta">
+                      {formatearFecha(post.created_at)}
+                      <button
+                        className={`like-btn ${liked ? 'liked' : ''}`}
+                        onClick={e => toggleLike(post, e)}
+                      >
+                        {liked ? '♥' : '♡'} {likeCount}
+                      </button>
+                    </span>
                   </div>
-                ) : null}
-                <div className="post-footer-mini">
-                  <p>{post.content}</p>
-                  <span className="post-meta">
-                    {formatearFecha(post.created_at)}
-                    <span className="like-icon">♡ {post.likes_count || 0}</span>
-                  </span>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -186,8 +242,15 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
             ) : null}
             <div className="post-detail-footer">
               <div className="post-detail-likes">
-                <span className="heart-icon">♡</span>
-                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
+                <button
+                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
+                  onClick={e => toggleLike(postSeleccionado, e)}
+                >
+                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
+                </button>
+                <span className="like-count">
+                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+                </span>
               </div>
               <div className="post-detail-caption">
                 <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}

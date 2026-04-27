@@ -8,7 +8,7 @@ const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov'
 const DIAS_SEMANA = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }) {
-  // --- ESTADOS --- (todo apretado para que ocupe menos)
+  // --- ESTADOS ---
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
   const [postSeleccionado, setPostSeleccionado] = useState(null);
@@ -20,7 +20,8 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
   const [loading, setLoading] = useState(true);
   const [loadingLikes, setLoadingLikes] = useState(false);
   const [errorFetch, setErrorFetch] = useState('');
-  
+  const [likesMap, setLikesMap] = useState({}); // { postId: { count, liked } }
+
   // Modal objetivos
   const [showFormObj, setShowFormObj] = useState(false);
   const [nuevoObjetivo, setNuevoObjetivo] = useState({ title: '', difficulty: 'easy', community_id: '' });
@@ -31,11 +32,55 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
   const token = localStorage.getItem('token');
   const misHeaders = { 'Authorization': `Bearer ${token}` };
 
-  // --- HELPERS Y LOGICA (modo oneliner) ---
+  // --- HELPERS ---
   const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`);
   const formatearFecha = iso => iso ? new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' }) : '';
   const calcularDiasRacha = strk => Array.from({ length: strk || 0 }, (_, i) => { let d = new Date(); d.setDate(d.getDate() - i); return { mes: d.getMonth(), año: d.getFullYear(), dia: d.getDate() }; });
 
+  // --- PRECARGA LIKES ---
+  const precargarLikes = (lista) => {
+    if (!lista.length || !token) return;
+    Promise.allSettled(
+      lista.map(p =>
+        fetch(`/api/posts/${p.id}/user-like`, { headers: misHeaders })
+          .then(r => r.ok ? r.json() : { liked: false })
+          .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count || 0 }))
+      )
+    ).then(results => {
+      const mapa = {};
+      results.forEach(r => {
+        if (r.status === 'fulfilled') {
+          mapa[r.value.id] = { liked: r.value.liked, count: r.value.count };
+        }
+      });
+      setLikesMap(prev => ({ ...prev, ...mapa }));
+    });
+  };
+
+  // --- TOGGLE LIKE ---
+  const toggleLike = async (post, e) => {
+    e.stopPropagation();
+    if (!token) return;
+    const id = post.id;
+    const yaLiked = likesMap[id]?.liked ?? false;
+    const countActual = likesMap[id]?.count ?? post.likes_count ?? 0;
+
+    // Optimistic update
+    setLikesMap(prev => ({
+      ...prev,
+      [id]: { liked: !yaLiked, count: yaLiked ? countActual - 1 : countActual + 1 }
+    }));
+
+    await fetch(`/api/posts/${id}/like`, {
+      method: yaLiked ? 'DELETE' : 'POST',
+      headers: misHeaders
+    }).catch(() => {
+      // Revertir si falla
+      setLikesMap(prev => ({ ...prev, [id]: { liked: yaLiked, count: countActual } }));
+    });
+  };
+
+  // --- CARGA INICIAL ---
   useEffect(() => {
     if (!token) return setErrorFetch('No hay sesión activa.') || setLoading(false);
     const cargarDatos = async () => {
@@ -47,23 +92,35 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
           fetch('/api/goals', { headers: misHeaders }).then(r => r.ok ? r.json() : [])
         ]);
         if (p.error) throw new Error(p.error);
-        setUser(p); setComunidades(Array.isArray(c)?c:[]); setPostsPropios(Array.isArray(po)?po:[]); setObjetivos(Array.isArray(o)?o:[]);
+        setUser(p);
+        setComunidades(Array.isArray(c) ? c : []);
+        const listaPostsPropios = Array.isArray(po) ? po : [];
+        setPostsPropios(listaPostsPropios);
+        setObjetivos(Array.isArray(o) ? o : []);
+        precargarLikes(listaPostsPropios);
       } catch (err) { setErrorFetch(err.message); } finally { setLoading(false); }
     };
     cargarDatos();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- CARGA LIKES TAB ---
   useEffect(() => {
     if (tabActual !== 'likes' || !token) return;
     setLoadingLikes(true);
     fetch('/api/posts/liked', { headers: misHeaders })
       .then(r => r.json())
-      .then(data => setPostsLikes(Array.isArray(data) ? data : []))
+      .then(data => {
+        const lista = Array.isArray(data) ? data : [];
+        setPostsLikes(lista);
+        precargarLikes(lista);
+      })
       .catch(() => setPostsLikes([]))
       .finally(() => setLoadingLikes(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabActual, token]);
 
+  // --- GUARDAR OBJETIVO ---
   const btnGuardarObjetivo = async () => {
     if (!nuevoObjetivo.title.trim() || !nuevoObjetivo.community_id) return setErrorObj('Completa título y comunidad bro.');
     setIsSaving(true); setErrorObj('');
@@ -76,7 +133,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
     } catch (err) { setErrorObj(err.message); } finally { setIsSaving(false); }
   };
 
-  // Variables de calendario y render
+  // --- VARIABLES CALENDARIO ---
   let añoAct = fechaCal.getFullYear(), mesAct = fechaCal.getMonth(), hoyCale = new Date();
   let diaPrimer = new Date(añoAct, mesAct, 1).getDay(), diasDelMes = new Date(añoAct, mesAct + 1, 0).getDate();
   const diasRachaSet = new Set(calcularDiasRacha(user?.streak).filter(d => d.mes === mesAct && d.año === añoAct).map(d => d.dia));
@@ -119,22 +176,52 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
       <section className="perfil-galeria">
         {isCargandoPosts && <p className="perfil-empty-state">Cargando...</p>}
         {!isCargandoPosts && !misPostsActuales.length && <p className="perfil-empty-state">{tabActual === 'likes' ? 'Aún no has dado likes. Explora!' : 'Sin publicaciones.'}</p>}
-        {!isCargandoPosts && misPostsActuales.map(p => (
-          <div key={p.id} className={`perfil-post ${p.media_url ? '' : 'perfil-post--sin-img'}`} onClick={() => setPostSeleccionado(p)} style={{ cursor: 'pointer' }}>
-            {p.media_url && <img src={parsearUrl(p.media_url)} alt="Post user" />}
-            <div className="post-footer-mini"><p>{p.content}</p><span className="post-meta">{formatearFecha(p.created_at)}<span className="like-icon">♡ {p.likes_count || 0}</span></span></div>
-          </div>
-        ))}
+        {!isCargandoPosts && misPostsActuales.map(p => {
+          const liked = likesMap[p.id]?.liked ?? false;
+          const likeCount = likesMap[p.id]?.count ?? p.likes_count ?? 0;
+
+          return (
+            <div key={p.id} className={`perfil-post ${p.media_url ? '' : 'perfil-post--sin-img'}`} onClick={() => setPostSeleccionado(p)} style={{ cursor: 'pointer' }}>
+              {p.media_url && <img src={parsearUrl(p.media_url)} alt="Post user" />}
+              <div className="post-footer-mini">
+                <p>{p.content}</p>
+                <span className="post-meta">
+                  {formatearFecha(p.created_at)}
+                  <button
+                    className={`like-btn ${liked ? 'liked' : ''}`}
+                    onClick={e => toggleLike(p, e)}
+                  >
+                    {liked ? '♥' : '♡'} {likeCount}
+                  </button>
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       {/* MODAL DETALLE POST */}
       {postSeleccionado && (
         <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
           <div className="post-detail-card" onClick={e => e.stopPropagation()}>
-            <div className="post-detail-header"><img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" /><span className="post-detail-username">{postSeleccionado.username || user?.username}</span><button className="post-detail-btn-seguir">Tu post</button></div>
+            <div className="post-detail-header">
+              <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" />
+              <span className="post-detail-username">{postSeleccionado.username || user?.username}</span>
+              <button className="post-detail-btn-seguir">Tu post</button>
+            </div>
             {postSeleccionado.media_url && <img src={parsearUrl(postSeleccionado.media_url)} alt="Contenido" className="post-detail-img" />}
             <div className="post-detail-footer">
-              <div className="post-detail-likes"><span className="heart-icon">♡</span><span className="like-count">{postSeleccionado.likes_count || 0}</span></div>
+              <div className="post-detail-likes">
+                <button
+                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
+                  onClick={e => toggleLike(postSeleccionado, e)}
+                >
+                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
+                </button>
+                <span className="like-count">
+                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+                </span>
+              </div>
               <div className="post-detail-caption"><strong>{postSeleccionado.username || user?.username}</strong> {postSeleccionado.content}</div>
               <div className="post-detail-comment"><strong>Comunidad:</strong> {postSeleccionado.community_name || 'Sin comunidad'}</div>
               <div className="post-detail-comment"><strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}</div>
@@ -170,7 +257,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
 
             <div className="objetivos-section">
               <div className="objetivos-header"><h3>⭐ Objetivos</h3><button className="btn-add" onClick={() => { setShowFormObj(!showFormObj); setErrorObj(''); }}>{showFormObj ? '✕ Cancelar' : '＋ Añadir'}</button></div>
-              
+
               {showFormObj && (
                 <div className="objetivo-form">
                   <div className="hb-field"><label>Título</label><input type="text" placeholder="Ej: Correr 5km" value={nuevoObjetivo.title} onChange={e => setNuevoObjetivo({...nuevoObjetivo, title: e.target.value})} /></div>

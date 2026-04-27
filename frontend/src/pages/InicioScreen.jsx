@@ -22,6 +22,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
+  const [likesMap, setLikesMap] = useState({}) // { postId: { count, liked } }
   const overlayRef = useRef(null)
 
   useEffect(() => {
@@ -61,9 +62,52 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
         setFeedPosts(todos)
         setCargandoFeed(false)
+
+        // Precargar estado de likes
+        if (todos.length > 0) {
+          const likeStates = await Promise.allSettled(
+            todos.map(p =>
+              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+                .then(r => r.ok ? r.json() : { liked: false })
+                .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
+            )
+          )
+          const mapa = {}
+          likeStates.forEach(r => {
+            if (r.status === 'fulfilled') {
+              mapa[r.value.id] = { liked: r.value.liked, count: r.value.count }
+            }
+          })
+          setLikesMap(mapa)
+        }
       })
       .catch(() => setCargandoFeed(false))
   }, [])
+
+  const toggleLike = async (post, e) => {
+    e.stopPropagation()
+    const token = localStorage.getItem('token')
+    if (!token) return
+    const id = post.id
+    const yaLiked = likesMap[id]?.liked ?? false
+    const countActual = likesMap[id]?.count ?? post.likes_count ?? 0
+
+    // Optimistic update
+    setLikesMap(prev => ({
+      ...prev,
+      [id]: { liked: !yaLiked, count: yaLiked ? countActual - 1 : countActual + 1 }
+    }))
+
+    await fetch(`${API_BASE}/posts/${id}/like`, {
+      method: yaLiked ? 'DELETE' : 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(() => {
+      // Revertir si falla
+      setLikesMap(prev => ({ ...prev, [id]: { liked: yaLiked, count: countActual } }))
+    })
+  }
 
   const abrirModal = async () => {
     setModalAbierto(true)
@@ -152,41 +196,54 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           </p>
         ) : (
           <div className="perfil-galeria" style={{ paddingBottom: 0 }}>
-            {feedPosts.map(post => (
-              <div
-                key={`${post.id}-${post.community_name}`}
-                className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
-                onClick={() => setPostSeleccionado(post)}
-                style={{ cursor: 'pointer' }}
-              >
-                {post.media_url ? (
-                  <img
-                    src={parsearUrl(post.media_url)}
-                    alt="Post"
-                    onError={e => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
-                ) : null}
-                {post.media_url ? (
-                  <div style={{
-                    display: 'none', alignItems: 'center', justifyContent: 'center',
-                    padding: '20px 12px', background: 'var(--hb-green-lt)',
-                    color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
-                  }}>
-                    📷 No se ha podido cargar la foto
+            {feedPosts.map(post => {
+              const liked = likesMap[post.id]?.liked ?? false
+              const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0
+
+              return (
+                <div
+                  key={`${post.id}-${post.community_name}`}
+                  className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+                  onClick={() => setPostSeleccionado(post)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {post.media_url ? (
+                    <img
+                      src={parsearUrl(post.media_url)}
+                      alt="Post"
+                      onError={e => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  {post.media_url ? (
+                    <div style={{
+                      display: 'none', alignItems: 'center', justifyContent: 'center',
+                      padding: '20px 12px', background: 'var(--hb-green-lt)',
+                      color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
+                    }}>
+                      📷 No se ha podido cargar la foto
+                    </div>
+                  ) : null}
+                  <div className="post-footer-mini">
+                    {post.username && (
+                      <span className="post-autor">@{post.username}</span>
+                    )}
+                    <p>{post.content}</p>
+                    <span className="post-meta">
+                      {formatearFecha(post.created_at)}
+                      <button
+                        className={`like-btn ${liked ? 'liked' : ''}`}
+                        onClick={e => toggleLike(post, e)}
+                      >
+                        {liked ? '♥' : '♡'} {likeCount}
+                      </button>
+                    </span>
                   </div>
-                ) : null}
-                <div className="post-footer-mini">
-                  <p>{post.content}</p>
-                  <span className="post-meta">
-                    {formatearFecha(post.created_at)}
-                    <span className="like-icon">♡ {post.likes_count || 0}</span>
-                  </span>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
@@ -233,8 +290,15 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
             ) : null}
             <div className="post-detail-footer">
               <div className="post-detail-likes">
-                <span className="heart-icon">♡</span>
-                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
+                <button
+                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
+                  onClick={e => toggleLike(postSeleccionado, e)}
+                >
+                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
+                </button>
+                <span className="like-count">
+                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+                </span>
               </div>
               <div className="post-detail-caption">
                 <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}
