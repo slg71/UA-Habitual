@@ -64,6 +64,7 @@ export default function App() {
           onInicio={() => setScreen('inicio')}
           onPerfil={() => setScreen('perfil')}
           onCrear={() => setScreen('crear')}
+          onConfiguracion={() => setScreen('configuracion')}
         />
       )}
       {screen === 'configuracion' && (

@@ -7,7 +7,8 @@ import BottomNav from '../components/BottomNav';
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const DIAS_SEMANA = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }) {
+// Añadimos 'onConfiguracion' a las props para poder navegar a la pantalla
+export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion }) {
   // --- ESTADOS ---
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
@@ -151,9 +152,16 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear }
         <div className="perfil-portada"><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600" alt="Portada" className="portada-img" /></div>
         <div className="perfil-info">
           <div className="perfil-avatar-container"><img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200" alt="Avatar" className="perfil-avatar" /></div>
+          
           <div className="perfil-datos">
             <div className="perfil-nombres"><h2>{user?.username || '—'}</h2><span>@{user?.username || '—'}</span></div>
-            <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
+            
+            <div className="perfil-acciones">
+              <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
+              
+              <button className="perfil-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+            </div>
+
           </div>
         </div>
         <div className="perfil-stats">

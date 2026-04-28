@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/configuracion.css'
 import BottomNav from '../components/BottomNav'
@@ -21,7 +21,8 @@ import BottomNav from '../components/BottomNav'
 // }
 
 export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
-  const [modoOscuro, setModoOscuro]           = useState(false)
+  const [modoOscuro, setModoOscuro]           = useState(document.body.classList.contains('dark-mode'))
+  const [textoGrande, setTextoGrande]         = useState(document.body.classList.contains('texto-grande'))
   const [notificaciones, setNotificaciones]   = useState(true)
   const [modalEliminar, setModalEliminar]     = useState(false)
   const [passEliminar, setPassEliminar]       = useState('')
@@ -29,10 +30,22 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
   const [errorEliminar, setErrorEliminar]     = useState('')
   const [cuentaEliminada, setCuentaEliminada] = useState(false)
 
+  // Efecto para aplicar/quitar el modo oscuro en toda la app
+  useEffect(() => {
+    if (modoOscuro) document.body.classList.add('dark-mode')
+    else document.body.classList.remove('dark-mode')
+  }, [modoOscuro])
+
+  // Efecto para aplicar/quitar el texto grande en toda la app
+  useEffect(() => {
+    if (textoGrande) document.body.classList.add('texto-grande')
+    else document.body.classList.remove('texto-grande')
+  }, [textoGrande])
+
   function confirmarEliminar() {
     if (!passEliminar || !confirmPass) { setErrorEliminar('Rellena ambos campos'); return }
     if (passEliminar !== confirmPass)  { setErrorEliminar('Las contraseñas no coinciden'); return }
-    // TODO: llamar a eliminarCuenta() cuando conectes la BD
+    // TODO: llamar a eliminarCuenta() cuando conectamos la BD
     setModalEliminar(false)
     setCuentaEliminada(true)
     setTimeout(() => { setCuentaEliminada(false); if (onLogout) onLogout() }, 2000)
@@ -70,8 +83,12 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
           <span>Seleccionar Idioma</span>
         </div>
 
+        {/*toggle de Texto Grande */}
         <div className="cfg-fila">
           <span>Tamaño de texto</span>
+          <div className={`cfg-toggle ${textoGrande ? 'cfg-toggle--on' : ''}`} onClick={() => setTextoGrande(v => !v)}>
+            <span className="cfg-toggle-bola" />
+          </div>
         </div>
 
         <div className="cfg-fila">
@@ -92,6 +109,11 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
           <span>Editar perfil</span>
         </div>
 
+        {/*Botón para cerrar sesión */}
+        <div className="cfg-fila" style={{ cursor: 'pointer' }} onClick={onLogout}>
+          <span>Cerrar sesión</span>
+        </div>
+
         <button className="cfg-fila-eliminar" onClick={() => { setModalEliminar(true); setErrorEliminar('') }}>
           Eliminar cuenta
         </button>
@@ -100,7 +122,7 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
 
       {/* ── Botones ── */}
       <div className="cfg-botones">
-        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setNotificaciones(true) }}>Reestablecer</button>
+        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setNotificaciones(true) }}>Reestablecer</button>
         <button className="hb-btn hb-btn--primary cfg-btn" onClick={() => alert('Guardado ✓')}>Guardar</button>
       </div>
 
