@@ -61,10 +61,28 @@
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
+  padding-bottom: 8px;
+  cursor: grab;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hb-green) var(--hb-green-lt);
 }
-.inicio-comunidades::-webkit-scrollbar { display: none; }
+
+.inicio-comunidades:active {
+  cursor: grabbing;
+}
+
+.inicio-comunidades::-webkit-scrollbar {
+  height: 4px;
+  display: block;
+}
+.inicio-comunidades::-webkit-scrollbar-track {
+  background: var(--hb-green-lt);
+  border-radius: 4px;
+}
+.inicio-comunidades::-webkit-scrollbar-thumb {
+  background: var(--hb-green);
+  border-radius: 4px;
+}
 
 .inicio-comunidad {
   display: flex;
@@ -177,13 +195,6 @@
 .hb-photo:nth-child(10) { grid-column: 1/4;  grid-row: 7/9; }
 .hb-photo:nth-child(11) { grid-column: 4/7;  grid-row: 8/10; }
 .hb-photo:nth-child(12) { grid-column: 7/10; grid-row: 7/9; }
-
-
-
-
-
-
-/* ── CAMBIAR ── */
 
 /* ── Modal comunidades ── */
 .modal-overlay {

@@ -7,11 +7,23 @@ import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 
 const API_BASE = '/api'
+const LIKES_CACHE_KEY = 'habitual_likes_v1'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
+
+// ─── Utilidades de caché ──────────────────────────────────────────────────────
+const leerCacheLikes = () => {
+  try { return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || '{}') }
+  catch { return {} }
+}
+
+const guardarCacheLikes = (mapa) => {
+  try { localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(mapa)) }
+  catch {}
+}
 
 export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad }) {
   const [misComunidades, setMisComunidades] = useState([])
@@ -22,8 +34,40 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
-  const [likesMap, setLikesMap] = useState({}) // { postId: { count, liked } }
+
+  // 1️⃣ INICIALIZAR desde localStorage para que persista entre navegaciones
+  const [likesMap, setLikesMap] = useState(() => leerCacheLikes())
+
   const overlayRef = useRef(null)
+  const comunidadesRef = useRef(null)
+  const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
+
+  // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
+  useEffect(() => {
+    guardarCacheLikes(likesMap)
+  }, [likesMap])
+
+  const onMouseDown = (e) => {
+    const el = comunidadesRef.current
+    dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
+    el.style.cursor = 'grabbing'
+  }
+  const onMouseLeave = () => {
+    dragState.current.isDown = false
+    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
+  }
+  const onMouseUp = () => {
+    dragState.current.isDown = false
+    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
+  }
+  const onMouseMove = (e) => {
+    if (!dragState.current.isDown) return
+    e.preventDefault()
+    const el = comunidadesRef.current
+    const x = e.pageX - el.offsetLeft
+    const walk = (x - dragState.current.startX) * 1.2
+    el.scrollLeft = dragState.current.scrollLeft - walk
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -61,26 +105,69 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
         setFeedPosts(todos)
+        // 3️⃣ Los posts se muestran YA con el estado cacheado del localStorage
         setCargandoFeed(false)
 
-        // Precargar estado de likes
+        // 4️⃣ Sincronización en segundo plano: solo pedimos los posts
+        // que NO están en caché, o todos si quieres frescura total.
+        // Aquí pedimos solo los que no están cacheados para ser eficientes.
         if (todos.length > 0) {
-          const likeStates = await Promise.allSettled(
+          const cachéActual = leerCacheLikes()
+          const sinCache = todos.filter(p => !(p.id in cachéActual))
+
+          // Solo consultamos el servidor para posts sin caché
+          if (sinCache.length > 0) {
+            const likeStates = await Promise.allSettled(
+              sinCache.map(p =>
+                fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                })
+                  .then(r => r.ok ? r.json() : { liked: false })
+                  .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
+              )
+            )
+
+            const nuevos = {}
+            likeStates.forEach(r => {
+              if (r.status === 'fulfilled') {
+                nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
+              }
+            })
+
+            if (Object.keys(nuevos).length > 0) {
+              setLikesMap(prev => ({ ...prev, ...nuevos }))
+            }
+          }
+
+          // 5️⃣ Actualizar contadores reales del servidor para TODOS los posts
+          // (el liked ya viene del caché, pero el count puede haber cambiado)
+          const countUpdates = await Promise.allSettled(
             todos.map(p =>
-              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-                .then(r => r.ok ? r.json() : { liked: false })
-                .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
+              fetch(`${API_BASE}/posts/${p.id}/likes/count`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => data ? { id: p.id, count: data.count } : null)
             )
           )
-          const mapa = {}
-          likeStates.forEach(r => {
-            if (r.status === 'fulfilled') {
-              mapa[r.value.id] = { liked: r.value.liked, count: r.value.count }
+
+          const countMap = {}
+          countUpdates.forEach(r => {
+            if (r.status === 'fulfilled' && r.value) {
+              countMap[r.value.id] = r.value.count
             }
           })
-          setLikesMap(mapa)
+
+          if (Object.keys(countMap).length > 0) {
+            setLikesMap(prev => {
+              const actualizado = { ...prev }
+              Object.entries(countMap).forEach(([id, count]) => {
+                actualizado[id] = {
+                  liked: actualizado[id]?.liked ?? false,
+                  count
+                }
+              })
+              return actualizado
+            })
+          }
         }
       })
       .catch(() => setCargandoFeed(false))
@@ -100,13 +187,31 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
       [id]: { liked: !yaLiked, count: yaLiked ? countActual - 1 : countActual + 1 }
     }))
 
-    await fetch(`${API_BASE}/posts/${id}/like`, {
-      method: yaLiked ? 'DELETE' : 'POST',
-      headers: { Authorization: `Bearer ${token}` }
-    }).catch(() => {
+    try {
+      const res = await fetch(`${API_BASE}/posts/${id}/like`, {
+        method: yaLiked ? 'DELETE' : 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (!res.ok) throw new Error('Like failed')
+
+      // Confirmar con el count real del servidor
+      const countRes = await fetch(`${API_BASE}/posts/${id}/likes/count`)
+      if (countRes.ok) {
+        const data = await countRes.json()
+        const countReal = typeof data.count === 'number' ? data.count : (yaLiked ? countActual - 1 : countActual + 1)
+        setLikesMap(prev => ({
+          ...prev,
+          [id]: { liked: !yaLiked, count: countReal }
+        }))
+      }
+    } catch {
       // Revertir si falla
-      setLikesMap(prev => ({ ...prev, [id]: { liked: yaLiked, count: countActual } }))
-    })
+      setLikesMap(prev => ({
+        ...prev,
+        [id]: { liked: yaLiked, count: countActual }
+      }))
+    }
   }
 
   const abrirModal = async () => {
@@ -162,7 +267,14 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           <button className="inicio-add-btn" aria-label="Añadir comunidad" onClick={abrirModal}>＋</button>
         </h2>
 
-        <div className="inicio-comunidades">
+        <div
+          className="inicio-comunidades"
+          ref={comunidadesRef}
+          onMouseDown={onMouseDown}
+          onMouseLeave={onMouseLeave}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+        >
           {misComunidades.length === 0 ? (
             <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>
               Aún no perteneces a ninguna. ¡Pulsa ＋ para unirte!
