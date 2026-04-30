@@ -2,8 +2,8 @@
    configuracion.css  –  ConfiguracionScreen
    ════════════════════════════════════════════════════ */
 
-.cfg-back { position: absolute; left: 0; }
-.cfg-titulo { font-size: 28px; margin-bottom: 0; }
+.cfg-back { margin-right: auto; }
+.cfg-titulo { font-size: 28px; margin-bottom: 0; flex: 1; text-align: center; }
 
 .cfg-lista {
   width: 100%;
@@ -63,7 +63,11 @@
 }
 .cfg-toggle--on .cfg-toggle-bola { transform: translateX(22px); }
 
+<<<<<<< HEAD
 .cfg-botones { display: flex; gap: 14px; width: 100%; margin-top: 0; flex-shrink: 0; }
+=======
+.cfg-botones { display: flex; gap: 14px; width: 100%; margin-top: 18px; margin-bottom: 90px; }
+>>>>>>> origin/Hugo
 .cfg-btn { flex: 1; border-radius: 10px; }
 
 .cfg-overlay {

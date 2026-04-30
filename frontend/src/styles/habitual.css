@@ -285,6 +285,7 @@ body.texto-grande .inicio-nav-item span:first-child {
   font-size: 26px !important;
 }
 
+<<<<<<< HEAD
 /* LÓGICA DEL ALTO CONTRASTE:
    Modo de alto contraste que mantiene la paleta de colores de la app pero aumenta el contraste
    para mejor accesibilidad, sin ser tan drástico como negro puro/blanco puro.
@@ -313,4 +314,26 @@ body.alto-contraste .hb-btn--primary {
 body.alto-contraste .hb-btn--secondary {
   background: var(--hb-bg-card) !important;
   color: var(--hb-text) !important;
+=======
+/* Posts en modo texto grande - Una columna */
+body.texto-grande .inicio-fila {
+  flex-direction: column !important;
+}
+
+body.texto-grande .inicio-post {
+  width: 100% !important;
+  flex: none !important;
+}
+
+body.texto-grande .inicio-post--texto {
+  flex: none !important;
+}
+
+body.texto-grande .inicio-post--audio {
+  flex: none !important;
+}
+
+body.texto-grande .perfil-galeria {
+  columns: 1 !important;
+>>>>>>> origin/Hugo
 }
