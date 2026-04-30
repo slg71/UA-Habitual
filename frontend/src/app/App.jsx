@@ -34,6 +34,7 @@ function getInitialScreen() {
 export default function App() {
   const [screen, setScreen] = useState(() => getInitialScreen())
   const [perfilVisitadoId, setPerfilVisitadoId] = useState(() => localStorage.getItem(PROFILE_STORAGE_KEY) || null)
+  const [refreshPerfilKey, setRefreshPerfilKey] = useState(0)
   const [comunidadActual, setComunidadActual] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(COMMUNITY_STORAGE_KEY) || 'null')
@@ -75,6 +76,7 @@ export default function App() {
     } else {
       localStorage.removeItem(PROFILE_STORAGE_KEY)
     }
+    setRefreshPerfilKey(prev => prev + 1)
     setScreen('perfil')
   }
 
@@ -127,6 +129,7 @@ export default function App() {
       )}
       {screen === 'perfil' && (
         <PerfilScreen
+          key={refreshPerfilKey}
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => abrirPerfilUsuario(null)}

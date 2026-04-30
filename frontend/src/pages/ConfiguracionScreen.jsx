@@ -35,8 +35,6 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
   const [confirmPassword, setConfirmPassword] = useState('')
   const [avatarFile, setAvatarFile]           = useState(null)
   const [bannerFile, setBannerFile]           = useState(null)
-  const [avatarPreview, setAvatarPreview]     = useState('')
-  const [bannerPreview, setBannerPreview]     = useState('')
   const [editError, setEditError]             = useState('')
   const [editSuccess, setEditSuccess]         = useState('')
   const [editLoading, setEditLoading]         = useState(false)
@@ -94,25 +92,14 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
         setEditUsername(data.username || '')
         setPerfilEmail(data.email || '')
         setEditEmail(data.email || '')
-        setAvatarPreview(data.avatar_url || '')
-        setBannerPreview(data.banner_url || '')
+        setAvatarFile(null)
+        setBannerFile(null)
       })
       .catch(error => {
         setEditError(error.message || 'No se pudo cargar el perfil')
       })
       .finally(() => setEditLoading(false))
   }, [editPerfilOpen])
-
-  useEffect(() => {
-    return () => {
-      if (avatarPreview && avatarPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(avatarPreview)
-      }
-      if (bannerPreview && bannerPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(bannerPreview)
-      }
-    }
-  }, [avatarPreview, bannerPreview])
 
   function guardarPerfil() {
     setEditError('')
@@ -145,44 +132,98 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
       return
     }
 
-    const payload = {}
-    if (editUsername !== perfilUsername) payload.username = editUsername
-    if (editEmail !== perfilEmail) payload.email = editEmail
-    if (newPassword) payload.password = newPassword
-    if (!payload.username && !payload.email && !payload.password) {
+    const hasUsernameChange = editUsername !== perfilUsername
+    const hasEmailChange = editEmail !== perfilEmail
+    const hasPasswordChange = newPassword
+    const hasAvatarChange = avatarFile !== null
+    const hasBannerChange = bannerFile !== null
+
+    if (!hasUsernameChange && !hasEmailChange && !hasPasswordChange && !hasAvatarChange && !hasBannerChange) {
       setEditError('No hay cambios para guardar.')
       return
     }
 
     setEditSaving(true)
 
-    fetch(`${API_BASE}/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders(token)
-      },
-      body: JSON.stringify(payload)
-    })
-      .then(async response => {
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Error al actualizar perfil')
-        return data
+    // Si hay cambios de archivo, usar FormData
+    if (hasAvatarChange || hasBannerChange) {
+      const formData = new FormData()
+      
+      if (hasUsernameChange) formData.append('username', editUsername)
+      if (hasEmailChange) formData.append('email', editEmail)
+      if (hasPasswordChange) formData.append('password', newPassword)
+      if (avatarFile) formData.append('avatar', avatarFile)
+      if (bannerFile) formData.append('banner', bannerFile)
+
+      fetch(`${API_BASE}/profile`, {
+        method: 'PUT',
+        headers: getAuthHeaders(token),
+        body: formData
       })
-      .then(() => {
-        setPerfilUsername(editUsername)
-        setPerfilEmail(editEmail)
-        setNewPassword('')
-        setConfirmPassword('')
-        setAvatarFile(null)
-        setBannerFile(null)
-        setEditSuccess('Perfil actualizado correctamente.')
-        setEditPerfilOpen(false)
+        .then(async response => {
+          const data = await response.json()
+          console.log('Response from server:', { status: response.status, data })
+          if (!response.ok) throw new Error(data.error || `Error al actualizar perfil (${response.status})`)
+          return data
+        })
+        .then(() => {
+          setPerfilUsername(editUsername)
+          setPerfilEmail(editEmail)
+          setNewPassword('')
+          setConfirmPassword('')
+          setAvatarFile(null)
+          setBannerFile(null)
+          setEditSuccess('Perfil actualizado correctamente.')
+          setEditPerfilOpen(false)
+          // Navegar al perfil para recargar la imagen
+          setTimeout(() => {
+            if (onPerfil) onPerfil()
+          }, 500)
+        })
+        .catch(error => {
+          console.error('Error al guardar perfil:', error)
+          setEditError(error.message || 'Error al actualizar perfil')
+        })
+        .finally(() => setEditSaving(false))
+    } else {
+      // Si no hay cambios de archivo, usar JSON
+      const payload = {}
+      if (hasUsernameChange) payload.username = editUsername
+      if (hasEmailChange) payload.email = editEmail
+      if (hasPasswordChange) payload.password = newPassword
+
+      fetch(`${API_BASE}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(token)
+        },
+        body: JSON.stringify(payload)
       })
-      .catch(error => {
-        setEditError(error.message || 'Error al actualizar perfil')
-      })
-      .finally(() => setEditSaving(false))
+        .then(async response => {
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.error || 'Error al actualizar perfil')
+          return data
+        })
+        .then(() => {
+          setPerfilUsername(editUsername)
+          setPerfilEmail(editEmail)
+          setNewPassword('')
+          setConfirmPassword('')
+          setAvatarFile(null)
+          setBannerFile(null)
+          setEditSuccess('Perfil actualizado correctamente.')
+          setEditPerfilOpen(false)
+          // Navegar al perfil para recargar la imagen
+          setTimeout(() => {
+            if (onPerfil) onPerfil()
+          }, 500)
+        })
+        .catch(error => {
+          setEditError(error.message || 'Error al actualizar perfil')
+        })
+        .finally(() => setEditSaving(false))
+    }
   }
 
   function confirmarEliminar() {
@@ -314,15 +355,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
                       onChange={e => {
                         const file = e.target.files?.[0] || null
                         setAvatarFile(file)
-                        if (file) {
-                          const url = URL.createObjectURL(file)
-                          setAvatarPreview(url)
-                        }
                       }}
                     />
-                    {avatarPreview && (
-                      <img src={avatarPreview} alt="Previsualización avatar" className="cfg-image-preview" />
-                    )}
                   </div>
 
                   <div className="hb-field">
@@ -333,15 +367,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
                       onChange={e => {
                         const file = e.target.files?.[0] || null
                         setBannerFile(file)
-                        if (file) {
-                          const url = URL.createObjectURL(file)
-                          setBannerPreview(url)
-                        }
                       }}
                     />
-                    {bannerPreview && (
-                      <img src={bannerPreview} alt="Previsualización portada" className="cfg-image-preview" />
-                    )}
                   </div>
 
                   <div className="hb-field">

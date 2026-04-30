@@ -11,7 +11,7 @@ import imagenUsuario from '../assets/imagen-usuario.png';
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion, onVerPerfil, perfilVisitadoId }) {
+export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion, onVerPerfil, perfilVisitadoId, refreshPerfilKey }) {
 
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
@@ -241,7 +241,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     };
 
     cargarPerfil();
-  }, [perfilVisitadoId]);
+  }, [perfilVisitadoId, refreshPerfilKey]);
 
   // Carga del tab likes
   useEffect(() => {

@@ -5,7 +5,7 @@ const getUserProfile = (req, res) => {
     const userId = req.user.id;
     const query = `
         SELECT 
-            u.id, u.username, u.email, u.score, u.streak, u.last_post_date, u.rank_id,
+            u.id, u.username, u.email, u.avatar_url, u.banner_url, u.score, u.streak, u.last_post_date, u.rank_id,
             r.name as rank_name,
             (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as follower_count,
             (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
@@ -31,7 +31,7 @@ const getPublicProfile = (req, res) => {
     const { user_id } = req.params;
     const query = `
         SELECT 
-            u.id, u.username, u.score, u.streak, u.last_post_date, u.rank_id,
+            u.id, u.username, u.avatar_url, u.banner_url, u.score, u.streak, u.last_post_date, u.rank_id,
             r.name as rank_name,
             (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as follower_count,
             (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
@@ -56,10 +56,14 @@ const getPublicProfile = (req, res) => {
 const updateProfile = (req, res) => {
     const userId = req.user.id;
     const { username, email, password } = req.body || {};
+    const avatarFile = req.files?.avatar?.[0] || null;
+    const bannerFile = req.files?.banner?.[0] || null;
+    const avatarUrl = avatarFile ? `/uploads/profiles/${avatarFile.filename}` : null;
+    const bannerUrl = bannerFile ? `/uploads/profiles/${bannerFile.filename}` : null;
 
-    if (!username && !email && !password) {
+    if (!username && !email && !password && !avatarUrl && !bannerUrl) {
         return res.status(400).json({
-            error: 'Envía al menos username, email o password'
+            error: 'Envía al menos username, email, password, avatar o banner'
         });
     }
 
@@ -75,6 +79,14 @@ const updateProfile = (req, res) => {
             fields.push('email = ?');
             params.push(email);
         }
+        if (avatarUrl) {
+            fields.push('avatar_url = ?');
+            params.push(avatarUrl);
+        }
+        if (bannerUrl) {
+            fields.push('banner_url = ?');
+            params.push(bannerUrl);
+        }
 
         const executeUpdate = (hashedPassword) => {
             if (hashedPassword) {
@@ -82,14 +94,24 @@ const updateProfile = (req, res) => {
                 params.push(hashedPassword);
             }
 
+            // Validar que hay al menos un campo para actualizar
+            if (fields.length === 0) {
+                return res.status(400).json({ error: 'No hay cambios para guardar' });
+            }
+
             const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
             params.push(userId);
 
             db.execute(query, params, (err) => {
                 if (err) {
+                    console.error('Error al actualizar perfil:', err);
                     return res.status(500).json({ error: 'Error al actualizar perfil' });
                 }
-                return res.json({ message: 'Perfil actualizado' });
+                return res.json({
+                    message: 'Perfil actualizado',
+                    avatar_url: avatarUrl,
+                    banner_url: bannerUrl
+                });
             });
         };
 

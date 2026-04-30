@@ -39,7 +39,7 @@ const login = (req, res) => {
         });
     }
 
-    const query = 'SELECT id, username, email, password_hash, score, streak, rank_id FROM users WHERE email = ?';
+    const query = 'SELECT id, username, email, avatar_url, password_hash, score, streak, rank_id FROM users WHERE email = ?';
     db.execute(query, [email], async (err, results) => {
         if (err) {
             return res.status(500).json({ error: 'Error en base de datos' });
@@ -69,6 +69,7 @@ const login = (req, res) => {
                 id: user.id,
                 username: user.username,
                 email: user.email,
+                avatar_url: user.avatar_url,
                 score: user.score,
                 streak: user.streak,
                 rank_id: user.rank_id
