@@ -159,6 +159,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--hb-radius-input);
   outline: none;
   transition: box-shadow 0.2s;
+  appearance: none;
   -webkit-appearance: none;
 }
 .hb-field input::placeholder { color: var(--hb-placeholder); }
@@ -285,7 +286,6 @@ body.texto-grande .inicio-nav-item span:first-child {
   font-size: 26px !important;
 }
 
-<<<<<<< HEAD
 /* LÓGICA DEL ALTO CONTRASTE:
    Modo de alto contraste que mantiene la paleta de colores de la app pero aumenta el contraste
    para mejor accesibilidad, sin ser tan drástico como negro puro/blanco puro.
@@ -314,7 +314,8 @@ body.alto-contraste .hb-btn--primary {
 body.alto-contraste .hb-btn--secondary {
   background: var(--hb-bg-card) !important;
   color: var(--hb-text) !important;
-=======
+}
+
 /* Posts en modo texto grande - Una columna */
 body.texto-grande .inicio-fila {
   flex-direction: column !important;
@@ -335,5 +336,4 @@ body.texto-grande .inicio-post--audio {
 
 body.texto-grande .perfil-galeria {
   columns: 1 !important;
->>>>>>> origin/Hugo
 }
