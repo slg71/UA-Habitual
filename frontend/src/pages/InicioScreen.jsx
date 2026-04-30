@@ -7,7 +7,7 @@ import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken } from '../utils/auth'
+import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearFecha = iso =>
@@ -15,7 +15,7 @@ const formatearFecha = iso =>
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
-export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad }) {
+export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad, onVerPerfil }) {
   const [misComunidades, setMisComunidades] = useState([])
   const [todasComunidades, setTodasComunidades] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
@@ -217,6 +217,12 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     }
   }
 
+  const abrirPerfil = (userId) => {
+    if (!onVerPerfil || !userId) return
+    const miId = getUserIdFromToken()
+    onVerPerfil(String(userId) === String(miId) ? null : userId)
+  }
+
   const abrirModal = async () => {
     setModalAbierto(true)
     setCargando(true)
@@ -344,7 +350,16 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
                   ) : null}
                   <div className="post-footer-mini">
                     {post.username && (
-                      <span className="post-autor">@{post.username}</span>
+                      <button
+                        type="button"
+                        className="post-autor post-autor--clickable"
+                        onClick={e => {
+                          e.stopPropagation()
+                          abrirPerfil(post.user_id)
+                        }}
+                      >
+                        @{post.username}
+                      </button>
                     )}
                     <p>{post.content}</p>
                     <span className="post-meta">
@@ -377,7 +392,13 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
               }}>
                 {postSeleccionado.username?.[0]?.toUpperCase()}
               </div>
-              <span className="post-detail-username">{postSeleccionado.username}</span>
+              <button
+                type="button"
+                className="post-detail-username post-detail-username-btn"
+                onClick={() => abrirPerfil(postSeleccionado.user_id)}
+              >
+                {postSeleccionado.username}
+              </button>
               {postSeleccionado.community_name && (
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
                   #{postSeleccionado.community_name}

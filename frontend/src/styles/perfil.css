@@ -378,6 +378,14 @@
   flex: 1; 
 }
 
+.post-detail-username-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
 .post-detail-btn-seguir {
   background: var(--hb-bg-card); /* Cambiado */
   color: var(--hb-text); /* Cambiado */
@@ -509,6 +517,22 @@
   font-weight: 700;
   color: var(--hb-green-dk);
   margin-bottom: 3px;
+}
+
+.post-autor--clickable {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: fit-content;
+}
+
+.post-autor--clickable:hover,
+.post-autor--clickable:focus-visible,
+.post-detail-username-btn:hover,
+.post-detail-username-btn:focus-visible {
+  text-decoration: underline;
 }
 
 .like-btn {
