@@ -3,6 +3,7 @@ import '../styles/habitual.css';
 import '../styles/inicio.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
+import CommentsSection from '../components/CommentsSection';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
@@ -16,6 +17,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
   const [postSeleccionado, setPostSeleccionado] = useState(null);
+  const [commentCount, setCommentCount] = useState(0);
   const [user, setUser] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loadingFollow, setLoadingFollow] = useState(false);
@@ -520,9 +522,14 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
                 <strong>{postSeleccionado.username || user?.username}</strong> {postSeleccionado.content}
               </div>
               <div className="post-detail-comment"><strong>Comunidad:</strong> {postSeleccionado.community_name || 'Sin comunidad'}</div>
-              <div className="post-detail-comment"><strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}</div>
+              <div className="post-detail-comment"><strong>Comentarios:</strong> {commentCount}</div>
               <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import '../styles/inicio.css'
 import '../styles/comunidad.css'
 import BottomNav from '../components/BottomNav'
 import '../styles/perfil.css'
+import CommentsSection from '../components/CommentsSection'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
@@ -31,6 +32,7 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   const [posts, setPosts] = useState([])
   const [cargandoPosts, setCargandoPosts] = useState(true)
   const [postSeleccionado, setPostSeleccionado] = useState(null)
+  const [commentCount, setCommentCount] = useState(0)
 
   // 1️⃣ Inicializar desde localStorage (con clave por usuario)
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
@@ -301,9 +303,14 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
                 <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}
               </div>
               <div className="post-detail-comment"><strong>Comunidad:</strong> {getTituloComunidad(comunidad?.name)}</div>
-              <div className="post-detail-comment"><strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}</div>
+              <div className="post-detail-comment"><strong>Comentarios:</strong> {commentCount}</div>
               <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}
