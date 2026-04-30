@@ -6,11 +6,12 @@ import BottomNav from '../components/BottomNav';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
+import imagenUsuario from '../assets/imagen-usuario.png';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion, onVerPerfil, perfilVisitadoId }) {
+export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion, onVerPerfil, perfilVisitadoId, refreshPerfilKey }) {
 
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
@@ -31,6 +32,8 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState('');
   const [fechaCal, setFechaCal] = useState(new Date());
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
@@ -39,6 +42,11 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   useEffect(() => {
     saveLikesCache(likesMap);
   }, [likesMap]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+    setBannerFailed(false);
+  }, [user]);
 
   const parsearUrl = (url) => {
     if (!url) return '';
@@ -240,7 +248,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     };
 
     cargarPerfil();
-  }, [perfilVisitadoId]);
+  }, [perfilVisitadoId, refreshPerfilKey]);
 
   // Carga del tab likes
   useEffect(() => {
@@ -377,11 +385,21 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
       <header className="perfil-header">
         <div className="perfil-portada">
-          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600" alt="Portada" className="portada-img" />
+          <img
+            src={!bannerFailed && user?.banner_url ? parsearUrl(user.banner_url) : imagenUsuario}
+            alt="Portada"
+            className="portada-img"
+            onError={() => setBannerFailed(true)}
+          />
         </div>
         <div className="perfil-info">
           <div className="perfil-avatar-container">
-            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200" alt="Avatar" className="perfil-avatar" />
+            <img
+              src={!avatarFailed && user?.avatar_url ? parsearUrl(user.avatar_url) : imagenUsuario}
+              alt="Avatar"
+              className="perfil-avatar"
+              onError={() => setAvatarFailed(true)}
+            />
           </div>
           <div className="perfil-datos">
             <div className="perfil-nombres">
@@ -479,7 +497,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
           <div className="post-detail-card" onClick={e => e.stopPropagation()}>
             <div className="post-detail-header">
-              <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" />
+              <img src={imagenUsuario} alt="Avatar" className="post-detail-avatar" />
               {postSeleccionado.user_id && String(postSeleccionado.user_id) !== String(user?.id) ? (
                 <button
                   type="button"

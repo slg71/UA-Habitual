@@ -17,24 +17,27 @@ if (!sslConfig) {
     console.warn('Aviso: no se encontró el certificado definido en DB_SSL_CA_PATH, conexión sin CA explícita.');
 }
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USERNAME || process.env.DB_USER,
     password: process.env.DB_PASSWORD || process.env.DB_PASS,
     database: process.env.DB_DATABASE || process.env.DB_NAME,
-    ssl: sslConfig
+    ssl: sslConfig,
+    waitForConnections: true,
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-db.on('error', (err) => {
-    console.error('Error de MySQL:', err.message);
-});
-
-db.connect((err) => {
+db.getConnection((err, connection) => {
     if (err) {
         console.error('Error conectando a MySQL:', err.message);
         return;
     }
+
+    connection.release();
     console.log('Conexión a MySQL establecida');
 });
 
