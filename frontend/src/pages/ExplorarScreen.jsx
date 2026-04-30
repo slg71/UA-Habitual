@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
 import PhotoCollage from '../components/PhotoCollage'
-import logo from '../assets/logo.png'
+import logoLight from '../assets/logo.png'
+import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
 
 // Ejemplo con API:
@@ -16,12 +18,22 @@ import BottomNav from '../components/BottomNav'
 // }, [])
 
 export default function ExplorarScreen( { onPerfil, onExplorar, onInicio, onConfiguracion, onCrear } ) {
+  const [modoOscuro, setModoOscuro] = useState(document.body.classList.contains('dark-mode'))
+
+  useEffect(() => {
+    const observador = new MutationObserver(() => {
+      setModoOscuro(document.body.classList.contains('dark-mode'))
+    })
+    observador.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observador.disconnect()
+  }, [])
+
   return (
     <div className="hb-screen inicio-screen">
 
       {/* ── Cabecera ── */}
       <div className="inicio-header">
-        <img src={logo} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
+        <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
         <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
