@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
 import '../styles/perfil.css'
-import logo from '../assets/logo.png'
+import logoLight from '../assets/logo.png'
+import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
@@ -23,6 +24,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
+  const [modoOscuro, setModoOscuro] = useState(document.body.classList.contains('dark-mode'))
 
   // 1️⃣ INICIALIZAR desde localStorage (con clave por usuario) para que persista entre navegaciones
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
@@ -35,6 +37,15 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   useEffect(() => {
     saveLikesCache(likesMap)
   }, [likesMap])
+
+  // Detectar cambios en modo oscuro
+  useEffect(() => {
+    const observador = new MutationObserver(() => {
+      setModoOscuro(document.body.classList.contains('dark-mode'))
+    })
+    observador.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observador.disconnect()
+  }, [])
 
   const cargarFeedComunidades = async () => {
     const token = getStoredToken()
@@ -249,7 +260,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     <div className="hb-screen inicio-screen">
 
       <div className="inicio-header">
-        <img src={logo} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
+        <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
         <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
