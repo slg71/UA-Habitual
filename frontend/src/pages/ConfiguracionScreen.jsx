@@ -3,7 +3,7 @@ import '../styles/habitual.css'
 import '../styles/configuracion.css'
 import BottomNav from '../components/BottomNav'
 import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken } from '../utils/auth'
+import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 
 // Ejemplo con API:
 // const guardar = () => {
@@ -23,9 +23,43 @@ import { getStoredToken } from '../utils/auth'
 // }
 
 export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
-  const [modoOscuro, setModoOscuro]           = useState(document.body.classList.contains('dark-mode'))
-  const [textoGrande, setTextoGrande]         = useState(document.body.classList.contains('texto-grande'))
-  const [altoContraste, setAltoContraste]     = useState(document.body.classList.contains('alto-contraste'))
+  const SETTINGS_STORAGE_KEY = 'habitual_user_settings_v1'
+
+  const getSettingsKey = () => {
+    const userId = getUserIdFromToken()
+    return userId ? `${SETTINGS_STORAGE_KEY}_${userId}` : SETTINGS_STORAGE_KEY
+  }
+
+  const loadUserSettings = () => {
+    const raw = localStorage.getItem(getSettingsKey())
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  const saveUserSettings = (settings) => {
+    localStorage.setItem(getSettingsKey(), JSON.stringify(settings))
+  }
+
+  const removeUserSettings = () => {
+    localStorage.removeItem(getSettingsKey())
+  }
+
+  const [modoOscuro, setModoOscuro]           = useState(() => {
+    const stored = loadUserSettings()
+    return stored?.modoOscuro ?? document.body.classList.contains('dark-mode')
+  })
+  const [textoGrande, setTextoGrande]         = useState(() => {
+    const stored = loadUserSettings()
+    return stored?.textoGrande ?? document.body.classList.contains('texto-grande')
+  })
+  const [altoContraste, setAltoContraste]     = useState(() => {
+    const stored = loadUserSettings()
+    return stored?.altoContraste ?? document.body.classList.contains('alto-contraste')
+  })
   const [editPerfilOpen, setEditPerfilOpen]   = useState(false)
   const [perfilUsername, setPerfilUsername]   = useState('')
   const [editUsername, setEditUsername]       = useState('')
@@ -44,6 +78,27 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
   const [confirmPass, setConfirmPass]         = useState('')
   const [errorEliminar, setErrorEliminar]     = useState('')
   const [cuentaEliminada, setCuentaEliminada] = useState(false)
+  const [configMessage, setConfigMessage]     = useState('')
+  const [deleteLoading, setDeleteLoading]     = useState(false)
+
+  const guardarPreferencias = () => {
+    saveUserSettings({ modoOscuro, textoGrande, altoContraste })
+    setConfigMessage('Preferencias guardadas.')
+  }
+
+  const restaurarPreferencias = () => {
+    setModoOscuro(false)
+    setTextoGrande(false)
+    setAltoContraste(false)
+    removeUserSettings()
+    setConfigMessage('Preferencias restauradas.')
+  }
+
+  useEffect(() => {
+    if (!configMessage) return
+    const timeoutId = setTimeout(() => setConfigMessage(''), 2800)
+    return () => clearTimeout(timeoutId)
+  }, [configMessage])
 
   // Efecto para aplicar/quitar el modo oscuro en toda la app
   useEffect(() => {
@@ -227,12 +282,51 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
   }
 
   function confirmarEliminar() {
-    if (!passEliminar || !confirmPass) { setErrorEliminar('Rellena ambos campos'); return }
-    if (passEliminar !== confirmPass)  { setErrorEliminar('Las contraseñas no coinciden'); return }
-    // TODO: llamar a eliminarCuenta() cuando conectamos la BD
-    setModalEliminar(false)
-    setCuentaEliminada(true)
-    setTimeout(() => { setCuentaEliminada(false); if (onLogout) onLogout() }, 2000)
+    if (!passEliminar || !confirmPass) {
+      setErrorEliminar('Rellena ambos campos')
+      return
+    }
+    if (passEliminar !== confirmPass) {
+      setErrorEliminar('Las contraseñas no coinciden')
+      return
+    }
+
+    const token = getStoredToken()
+    if (!token) {
+      setErrorEliminar('No hay sesión activa.')
+      return
+    }
+
+    setErrorEliminar('')
+    setDeleteLoading(true)
+
+    fetch(`${API_BASE}/profile`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(token)
+      },
+      body: JSON.stringify({ password: passEliminar })
+    })
+      .then(async response => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Error al eliminar la cuenta')
+        return data
+      })
+      .then(() => {
+        setModalEliminar(false)
+        setCuentaEliminada(true)
+        setPassEliminar('')
+        setConfirmPass('')
+        setTimeout(() => {
+          setCuentaEliminada(false)
+          if (onLogout) onLogout()
+        }, 2000)
+      })
+      .catch(error => {
+        setErrorEliminar(error.message || 'No se pudo eliminar la cuenta')
+      })
+      .finally(() => setDeleteLoading(false))
   }
 
   if (cuentaEliminada) {
@@ -302,10 +396,10 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
 
       {/* ── Botones ── */}
       <div className="cfg-botones">
-        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setAltoContraste(false) }}>Reestablecer</button>
-        <button className="hb-btn hb-btn--primary cfg-btn" onClick={() => alert('Guardado ✓')}>Guardar</button>
+        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={restaurarPreferencias}>Reestablecer</button>
+        <button className="hb-btn hb-btn--primary cfg-btn" onClick={guardarPreferencias}>Guardar</button>
       </div>
-
+      {configMessage && <p className="cfg-success cfg-config-message">{configMessage}</p>}
       {/* ── Nav inferior ── */}
       <BottomNav
         onInicio={onInicio}
@@ -450,8 +544,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
             {errorEliminar && <p className="cfg-error">{errorEliminar}</p>}
 
             <div className="cfg-botones">
-              <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModalEliminar(false); setPassEliminar(''); setConfirmPass('') }}>Cancelar</button>
-              <button className="hb-btn hb-btn--primary cfg-btn" onClick={confirmarEliminar}>Confirmar</button>
+              <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModalEliminar(false); setPassEliminar(''); setConfirmPass(''); setErrorEliminar('') }}>Cancelar</button>
+              <button className="hb-btn hb-btn--primary cfg-btn" onClick={confirmarEliminar} disabled={deleteLoading}>{deleteLoading ? 'Eliminando...' : 'Confirmar'}</button>
             </div>
 
           </div>
