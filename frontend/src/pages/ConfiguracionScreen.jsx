@@ -23,7 +23,7 @@ import BottomNav from '../components/BottomNav'
 export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
   const [modoOscuro, setModoOscuro]           = useState(document.body.classList.contains('dark-mode'))
   const [textoGrande, setTextoGrande]         = useState(document.body.classList.contains('texto-grande'))
-  const [notificaciones, setNotificaciones]   = useState(true)
+  const [altoContraste, setAltoContraste]     = useState(document.body.classList.contains('alto-contraste'))
   const [modalEliminar, setModalEliminar]     = useState(false)
   const [passEliminar, setPassEliminar]       = useState('')
   const [confirmPass, setConfirmPass]         = useState('')
@@ -41,6 +41,12 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
     if (textoGrande) document.body.classList.add('texto-grande')
     else document.body.classList.remove('texto-grande')
   }, [textoGrande])
+
+  // Efecto para aplicar/quitar el alto contraste en toda la app
+  useEffect(() => {
+    if (altoContraste) document.body.classList.add('alto-contraste')
+    else document.body.classList.remove('alto-contraste')
+  }, [altoContraste])
 
   function confirmarEliminar() {
     if (!passEliminar || !confirmPass) { setErrorEliminar('Rellena ambos campos'); return }
@@ -99,8 +105,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
         </div>
 
         <div className="cfg-fila">
-          <span>Notificaciones</span>
-          <div className={`cfg-toggle ${notificaciones ? 'cfg-toggle--on' : ''}`} onClick={() => setNotificaciones(v => !v)}>
+          <span>Alto contraste</span>
+          <div className={`cfg-toggle ${altoContraste ? 'cfg-toggle--on' : ''}`} onClick={() => setAltoContraste(v => !v)}>
             <span className="cfg-toggle-bola" />
           </div>
         </div>
@@ -122,7 +128,7 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
 
       {/* ── Botones ── */}
       <div className="cfg-botones">
-        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setNotificaciones(true) }}>Reestablecer</button>
+        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setAltoContraste(false) }}>Reestablecer</button>
         <button className="hb-btn hb-btn--primary cfg-btn" onClick={() => alert('Guardado ✓')}>Guardar</button>
       </div>
 
