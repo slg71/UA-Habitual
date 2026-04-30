@@ -68,7 +68,10 @@ const getPostLikeCount = (req, res) => {
         if (err) {
             return res.status(500).json({ error: 'Error al contar likes' });
         }
-        return res.json({ like_count: rows[0].like_count });
+        return res.json({
+            count: rows[0].like_count,
+            like_count: rows[0].like_count
+        });
     });
 };
 
@@ -81,7 +84,11 @@ const hasUserLikedPost = (req, res) => {
         if (err) {
             return res.status(500).json({ error: 'Error al verificar like' });
         }
-        return res.json({ has_liked: rows.length > 0 });
+        const liked = rows.length > 0;
+        return res.json({
+            liked,
+            has_liked: liked
+        });
     });
 };
 

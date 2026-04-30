@@ -1,10 +1,10 @@
 import { getStoredToken, getUserIdFromToken } from './auth'
 
-const GUEST_LIKES_CACHE_KEY = 'habitual_likes_v1_guest'
+const GUEST_LIKES_CACHE_KEY = 'habitual_likes_v2_guest'
 
 const getLikesCacheKey = (token = getStoredToken()) => {
   const userId = getUserIdFromToken(token)
-  return userId ? `habitual_likes_v1_user_${userId}` : GUEST_LIKES_CACHE_KEY
+  return userId ? `habitual_likes_v2_user_${userId}` : GUEST_LIKES_CACHE_KEY
 }
 
 export const loadLikesCache = (token) => {
