@@ -63,11 +63,7 @@
 }
 .cfg-toggle--on .cfg-toggle-bola { transform: translateX(22px); }
 
-<<<<<<< HEAD
-.cfg-botones { display: flex; gap: 14px; width: 100%; margin-top: 0; flex-shrink: 0; }
-=======
 .cfg-botones { display: flex; gap: 14px; width: 100%; margin-top: 18px; margin-bottom: 90px; }
->>>>>>> origin/Hugo
 .cfg-btn { flex: 1; border-radius: 10px; }
 
 .cfg-overlay {
