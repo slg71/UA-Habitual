@@ -523,8 +523,16 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
                 {todasComunidades.map(c => (
                   <div key={c.id} className="modal-comunidad-item">
                     <div className="modal-comunidad-avatar-sm">
-                      {c.name?.[0]?.toUpperCase()}
-                    </div>
+                        <img
+                          src={getImagenComunidad(c.name)}
+                          alt={c.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                          onError={e => {
+                            e.target.style.display = 'none'
+                            e.target.parentElement.textContent = c.name?.[0]?.toUpperCase()
+                          }}
+                        />
+                      </div>
                     <div className="modal-comunidad-info">
                       <span className="modal-comunidad-nombre">{c.name}</span>
                       {c.category && <span className="modal-comunidad-cat">{c.category}</span>}

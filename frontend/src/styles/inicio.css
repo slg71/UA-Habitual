@@ -293,6 +293,7 @@
   font-weight: 700;
   color: var(--hb-green-dk);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .modal-comunidad-info {
