@@ -32,6 +32,8 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [isSaving, setIsSaving] = useState(false);
   const [errorObj, setErrorObj] = useState('');
   const [fechaCal, setFechaCal] = useState(new Date());
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
@@ -40,6 +42,11 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   useEffect(() => {
     saveLikesCache(likesMap);
   }, [likesMap]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+    setBannerFailed(false);
+  }, [user]);
 
   const parsearUrl = (url) => {
     if (!url) return '';
@@ -379,17 +386,19 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
       <header className="perfil-header">
         <div className="perfil-portada">
           <img
-            src={user?.banner_url ? parsearUrl(user.banner_url) : "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600"}
+            src={!bannerFailed && user?.banner_url ? parsearUrl(user.banner_url) : imagenUsuario}
             alt="Portada"
             className="portada-img"
+            onError={() => setBannerFailed(true)}
           />
         </div>
         <div className="perfil-info">
           <div className="perfil-avatar-container">
             <img
-              src={user?.avatar_url ? parsearUrl(user.avatar_url) : imagenUsuario}
+              src={!avatarFailed && user?.avatar_url ? parsearUrl(user.avatar_url) : imagenUsuario}
               alt="Avatar"
               className="perfil-avatar"
+              onError={() => setAvatarFailed(true)}
             />
           </div>
           <div className="perfil-datos">
