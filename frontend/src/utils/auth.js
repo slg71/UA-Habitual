@@ -1,6 +1,18 @@
 const TOKEN_STORAGE_KEY = 'token'
 
-export const getStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY)
+const getStoredTokenRaw = () => localStorage.getItem(TOKEN_STORAGE_KEY)
+
+export const getStoredToken = () => {
+  const token = getStoredTokenRaw()
+  if (!token) return null
+
+  if (isTokenExpired(token)) {
+    clearStoredToken()
+    return null
+  }
+
+  return token
+}
 
 export const setStoredToken = (token) => {
   localStorage.setItem(TOKEN_STORAGE_KEY, token)
@@ -10,7 +22,7 @@ export const clearStoredToken = () => {
   localStorage.removeItem(TOKEN_STORAGE_KEY)
 }
 
-export const decodeJwtPayload = (token = getStoredToken()) => {
+export const decodeJwtPayload = (token = getStoredTokenRaw()) => {
   if (!token) return null
 
   try {
@@ -26,6 +38,14 @@ export const decodeJwtPayload = (token = getStoredToken()) => {
   } catch {
     return null
   }
+}
+
+export const isTokenExpired = (token = getStoredTokenRaw()) => {
+  const payload = decodeJwtPayload(token)
+  if (!payload?.exp) return false
+
+  const nowInSeconds = Math.floor(Date.now() / 1000)
+  return nowInSeconds >= payload.exp
 }
 
 export const getUserIdFromToken = (token = getStoredToken()) => {
