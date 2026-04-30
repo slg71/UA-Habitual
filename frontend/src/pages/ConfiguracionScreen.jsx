@@ -3,7 +3,7 @@ import '../styles/habitual.css'
 import '../styles/configuracion.css'
 import BottomNav from '../components/BottomNav'
 import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken, getUserIdFromToken } from '../utils/auth'
+import { getStoredToken, getUserIdFromToken, loadUserSettings, saveUserSettings, clearUserSettings } from '../utils/auth'
 
 // Ejemplo con API:
 // const guardar = () => {
@@ -23,31 +23,6 @@ import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 // }
 
 export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
-  const SETTINGS_STORAGE_KEY = 'habitual_user_settings_v1'
-
-  const getSettingsKey = () => {
-    const userId = getUserIdFromToken()
-    return userId ? `${SETTINGS_STORAGE_KEY}_${userId}` : SETTINGS_STORAGE_KEY
-  }
-
-  const loadUserSettings = () => {
-    const raw = localStorage.getItem(getSettingsKey())
-    if (!raw) return null
-    try {
-      return JSON.parse(raw)
-    } catch {
-      return null
-    }
-  }
-
-  const saveUserSettings = (settings) => {
-    localStorage.setItem(getSettingsKey(), JSON.stringify(settings))
-  }
-
-  const removeUserSettings = () => {
-    localStorage.removeItem(getSettingsKey())
-  }
-
   const [modoOscuro, setModoOscuro]           = useState(() => {
     const stored = loadUserSettings()
     return stored?.modoOscuro ?? document.body.classList.contains('dark-mode')
@@ -90,7 +65,7 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
     setModoOscuro(false)
     setTextoGrande(false)
     setAltoContraste(false)
-    removeUserSettings()
+    clearUserSettings()
     setConfigMessage('Preferencias restauradas.')
   }
 
