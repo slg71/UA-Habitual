@@ -387,7 +387,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         <div className="perfil-info">
           <div className="perfil-avatar-container">
             <img
-              src={user?.avatar_url ? parsearUrl(user.avatar_url) : "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200"}
+              src={user?.avatar_url ? parsearUrl(user.avatar_url) : imagenUsuario}
               alt="Avatar"
               className="perfil-avatar"
             />
