@@ -3,6 +3,7 @@ const {
     getUserProfile,
     getPublicProfile,
     updateProfile,
+    deleteProfile,
     getLeaderboard,
     searchUsers
 } = require('../controllers/usersController');
@@ -28,5 +29,6 @@ router.put('/profile', verifyToken, uploadProfilePic.fields([
     { name: 'avatar', maxCount: 1 },
     { name: 'banner', maxCount: 1 }
 ]), handleUploadErrors, updateProfile);
+router.delete('/profile', verifyToken, deleteProfile);
 
 module.exports = router;

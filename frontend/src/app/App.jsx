@@ -63,6 +63,7 @@ export default function App() {
     localStorage.removeItem(SCREEN_STORAGE_KEY)
     localStorage.removeItem(COMMUNITY_STORAGE_KEY)
     localStorage.removeItem(PROFILE_STORAGE_KEY)
+    document.body.classList.remove('dark-mode', 'texto-grande', 'alto-contraste')
     setComunidadActual(null)
     setPerfilVisitadoId(null)
     setScreen('welcome')

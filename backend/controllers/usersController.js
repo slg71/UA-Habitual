@@ -152,6 +152,62 @@ const updateProfile = (req, res) => {
     checkUsername(() => checkEmail(updateUser));
 };
 
+const deleteProfile = (req, res) => {
+    const userId = req.user.id;
+    const { password } = req.body || {};
+
+    if (!password) {
+        return res.status(400).json({ error: 'La contraseña es obligatoria para eliminar la cuenta' });
+    }
+
+    const verifyQuery = 'SELECT password_hash FROM users WHERE id = ?';
+    db.execute(verifyQuery, [userId], async (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al verificar la contraseña' });
+        }
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        const passwordHash = rows[0].password_hash;
+        const isMatch = await bcrypt.compare(password, passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
+        }
+
+        const deleteOwnLikes = 'DELETE FROM post_likes WHERE user_id = ? OR post_id IN (SELECT id FROM posts WHERE user_id = ?)';
+        const deleteOwnComments = 'DELETE FROM comments WHERE user_id = ? OR post_id IN (SELECT id FROM posts WHERE user_id = ?)';
+        const deleteOwnGoals = 'DELETE FROM goals WHERE user_id = ?';
+        const deleteFollows = 'DELETE FROM follows WHERE follower_id = ? OR following_id = ?';
+        const deleteCommunities = 'DELETE FROM user_communities WHERE user_id = ?';
+        const deletePosts = 'DELETE FROM posts WHERE user_id = ?';
+        const deleteUser = 'DELETE FROM users WHERE id = ?';
+
+        db.execute(deleteOwnLikes, [userId, userId], (err) => {
+            if (err) return res.status(500).json({ error: 'Error al eliminar likes' });
+            db.execute(deleteOwnComments, [userId, userId], (err) => {
+                if (err) return res.status(500).json({ error: 'Error al eliminar comentarios' });
+                db.execute(deleteOwnGoals, [userId], (err) => {
+                    if (err) return res.status(500).json({ error: 'Error al eliminar metas' });
+                    db.execute(deleteFollows, [userId, userId], (err) => {
+                        if (err) return res.status(500).json({ error: 'Error al eliminar seguimiento' });
+                        db.execute(deleteCommunities, [userId], (err) => {
+                            if (err) return res.status(500).json({ error: 'Error al eliminar comunidades' });
+                            db.execute(deletePosts, [userId], (err) => {
+                                if (err) return res.status(500).json({ error: 'Error al eliminar publicaciones' });
+                                db.execute(deleteUser, [userId], (err) => {
+                                    if (err) return res.status(500).json({ error: 'Error al eliminar cuenta' });
+                                    return res.json({ message: 'Cuenta eliminada correctamente' });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+};
+
 const getLeaderboard = (req, res) => {
     const { limit, offset, category } = req.query;
     const limitVal = Math.min(parseInt(limit) || 100, 1000);
@@ -221,6 +277,7 @@ module.exports = {
     getUserProfile,
     getPublicProfile,
     updateProfile,
+    deleteProfile,
     getLeaderboard,
     searchUsers
 };
