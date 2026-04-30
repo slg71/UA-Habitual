@@ -159,6 +159,7 @@
   break-inside: avoid;
   margin-bottom: 12px;
   background: var(--hb-bg-card); /* Cambiado */
+  border: 1px solid var(--hb-green-lt);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
@@ -167,7 +168,6 @@
 
 .perfil-post--sin-img {
   min-height: 120px;
-  border: 1px solid var(--hb-green-lt); /* Cambiado */
 }
 
 .perfil-post img {
