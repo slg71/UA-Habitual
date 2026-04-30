@@ -31,7 +31,9 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   const overlayRef = useRef(null)
   const comunidadesRef = useRef(null)
-  const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
+  const isDraggingRef = useRef(false)
+  const startXRef = useRef(0)
+  const scrollLeftRef = useRef(0)
 
   // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
   useEffect(() => {
@@ -150,27 +152,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     }
   }
 
-  const onMouseDown = (e) => {
-    const el = comunidadesRef.current
-    dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
-    el.style.cursor = 'grabbing'
-  }
-  const onMouseLeave = () => {
-    dragState.current.isDown = false
-    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
-  }
-  const onMouseUp = () => {
-    dragState.current.isDown = false
-    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
-  }
-  const onMouseMove = (e) => {
-    if (!dragState.current.isDown) return
-    e.preventDefault()
-    const el = comunidadesRef.current
-    const x = e.pageX - el.offsetLeft
-    const walk = (x - dragState.current.startX) * 1.2
-    el.scrollLeft = dragState.current.scrollLeft - walk
-  }
+  // referencias para controlar el scroll por flechas
 
   useEffect(() => {
     cargarFeedComunidades()
@@ -223,6 +205,52 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     onVerPerfil(String(userId) === String(miId) ? null : userId)
   }
 
+  // handlers para arrastrar la lista de comunidades
+  const handleMouseDown = (e) => {
+    const el = comunidadesRef.current
+    if (!el) return
+    isDraggingRef.current = true
+    el.classList.add('dragging')
+    startXRef.current = e.pageX - el.offsetLeft
+    scrollLeftRef.current = el.scrollLeft
+  }
+
+  const handleMouseMove = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !isDraggingRef.current) return
+    e.preventDefault()
+    const x = e.pageX - el.offsetLeft
+    const walk = x - startXRef.current
+    el.scrollLeft = scrollLeftRef.current - walk
+  }
+
+  const handleMouseUp = () => {
+    const el = comunidadesRef.current
+    if (!el) return
+    isDraggingRef.current = false
+    el.classList.remove('dragging')
+  }
+
+  const handleTouchStart = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !e.touches?.length) return
+    isDraggingRef.current = true
+    startXRef.current = e.touches[0].pageX - el.offsetLeft
+    scrollLeftRef.current = el.scrollLeft
+  }
+
+  const handleTouchMove = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !isDraggingRef.current || !e.touches?.length) return
+    const x = e.touches[0].pageX - el.offsetLeft
+    const walk = x - startXRef.current
+    el.scrollLeft = scrollLeftRef.current - walk
+  }
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false
+  }
+
   const abrirModal = async () => {
     setModalAbierto(true)
     setCargando(true)
@@ -262,6 +290,12 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   const yaMiembro = (id) => misComunidades.some(c => c.id === id)
 
+  const scrollComunidades = (offset = 200) => {
+    const el = comunidadesRef.current
+    if (!el) return
+    el.scrollBy({ left: offset, behavior: 'smooth' })
+  }
+
   return (
     <div className="hb-screen inicio-screen">
 
@@ -277,15 +311,19 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           <button className="inicio-add-btn" aria-label="Añadir comunidad" onClick={abrirModal}>＋</button>
         </h2>
 
-        <div
-          className="inicio-comunidades"
-          ref={comunidadesRef}
-          onMouseDown={onMouseDown}
-          onMouseLeave={onMouseLeave}
-          onMouseUp={onMouseUp}
-          onMouseMove={onMouseMove}
-        >
-          {misComunidades.length === 0 ? (
+        <div className="inicio-comunidades-wrapper">
+          <div
+            className="inicio-comunidades"
+            ref={comunidadesRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {misComunidades.length === 0 ? (
             <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>
               Aún no perteneces a ninguna. ¡Pulsa ＋ para unirte!
             </p>
@@ -303,6 +341,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
               </div>
             ))
           )}
+          </div>
         </div>
       </section>
 

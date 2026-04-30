@@ -57,32 +57,22 @@
 }
 
 /* ── Comunidades ── */
+.inicio-comunidades-wrapper { position: relative; }
+
 .inicio-comunidades {
   display: flex;
   gap: 14px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
   cursor: grab;
-  scrollbar-width: thin;
-  scrollbar-color: var(--hb-green) var(--hb-green-lt);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
 }
 
-.inicio-comunidades:active {
-  cursor: grabbing;
-}
+.inicio-comunidades.dragging { cursor: grabbing; }
 
-.inicio-comunidades::-webkit-scrollbar {
-  height: 4px;
-  display: block;
-}
-.inicio-comunidades::-webkit-scrollbar-track {
-  background: var(--hb-green-lt);
-  border-radius: 4px;
-}
-.inicio-comunidades::-webkit-scrollbar-thumb {
-  background: var(--hb-green);
-  border-radius: 4px;
-}
+.inicio-comunidades::-webkit-scrollbar { display: none; height: 0; }
 
 .inicio-comunidad {
   display: flex;
@@ -112,6 +102,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Flechas laterales para navegar comunidades */
+.comunidades-arrow { display: none; }
+@media (max-width: 480px) {
+  .comunidades-arrow { display: none; }
 }
 
 /* ── Feed ── */
