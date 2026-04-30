@@ -377,11 +377,19 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
       <header className="perfil-header">
         <div className="perfil-portada">
-          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600" alt="Portada" className="portada-img" />
+          <img
+            src={user?.banner_url ? parsearUrl(user.banner_url) : "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600"}
+            alt="Portada"
+            className="portada-img"
+          />
         </div>
         <div className="perfil-info">
           <div className="perfil-avatar-container">
-            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200" alt="Avatar" className="perfil-avatar" />
+            <img
+              src={user?.avatar_url ? parsearUrl(user.avatar_url) : "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200"}
+              alt="Avatar"
+              className="perfil-avatar"
+            />
           </div>
           <div className="perfil-datos">
             <div className="perfil-nombres">
