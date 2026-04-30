@@ -336,3 +336,92 @@
   color: var(--hb-green-lt);
   cursor: default;
 }
+
+/* ── Grid explorar ── */
+.explorar-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+ 
+.explorar-grid-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #c5c5b5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+ 
+.explorar-grid-item img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+ 
+.explorar-overlay-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 4px 5px 12px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
+  z-index: 1;
+}
+ 
+.explorar-usuario-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: white;
+  font-size: 8px;
+  font-weight: 600;
+  font-family: var(--hb-font-body);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.explorar-usuario-btn:hover  { opacity: 0.8; }
+.explorar-usuario-btn:active { opacity: 0.6; }
+ 
+.explorar-overlay-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 6px 5px;
+  background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+  z-index: 1;
+}
+ 
+.explorar-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+}
+ 
+.explorar-corazon {
+  font-size: 14px;
+  color: white;
+  transition: color 0.2s, transform 0.15s;
+  display: inline-block;
+}
+ 
+.explorar-corazon--lleno {
+  color: #ff4d4d;
+  transform: scale(1.2);
+}
+ 
+.explorar-likes-num {
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
