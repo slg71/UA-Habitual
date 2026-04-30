@@ -8,6 +8,7 @@ import PerfilScreen from '../pages/PerfilScreen'
 import ConfiguracionScreen from '../pages/ConfiguracionScreen'
 import CrearScreen from '../pages/CrearScreen'
 import ComunidadScreen from '../pages/ComunidadScreen'
+import { clearStoredToken, getStoredToken } from '../utils/auth'
 
 const SCREEN_STORAGE_KEY = 'habitual_last_screen_v1'
 const COMMUNITY_STORAGE_KEY = 'habitual_last_community_v1'
@@ -15,7 +16,7 @@ const AUTH_SCREENS = new Set(['inicio', 'explorar', 'perfil', 'configuracion', '
 const PUBLIC_SCREENS = new Set(['welcome', 'register', 'login'])
 
 function getInitialScreen() {
-  const token = localStorage.getItem('token')
+  const token = getStoredToken()
   const savedScreen = localStorage.getItem(SCREEN_STORAGE_KEY)
   const savedCommunity = localStorage.getItem(COMMUNITY_STORAGE_KEY)
 
@@ -51,7 +52,7 @@ export default function App() {
   }, [screen])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
+    clearStoredToken()
     localStorage.removeItem(SCREEN_STORAGE_KEY)
     localStorage.removeItem(COMMUNITY_STORAGE_KEY)
     setComunidadActual(null)

@@ -5,37 +5,14 @@ import '../styles/perfil.css'
 import logo from '../assets/logo.png'
 import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
-
-const API_BASE = '/api'
+import { API_BASE, getAuthHeaders } from '../utils/api'
+import { getStoredToken } from '../utils/auth'
+import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
-
-// ─── Clave de caché por usuario ───────────────────────────────────────────────
-const getLikesCacheKey = () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) return 'habitual_likes_v1_guest'
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const userId = payload.id || payload.sub || payload.userId || 'unknown'
-    return `habitual_likes_v1_user_${userId}`
-  } catch {
-    return 'habitual_likes_v1_guest'
-  }
-}
-
-// ─── Utilidades de caché ──────────────────────────────────────────────────────
-const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}') }
-  catch { return {} }
-}
-
-const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)) }
-  catch {}
-}
 
 export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad }) {
   const [misComunidades, setMisComunidades] = useState([])
@@ -48,7 +25,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [uniendose, setUniendose] = useState(null)
 
   // 1️⃣ INICIALIZAR desde localStorage (con clave por usuario) para que persista entre navegaciones
-  const [likesMap, setLikesMap] = useState(() => leerCacheLikes())
+  const [likesMap, setLikesMap] = useState(() => loadLikesCache())
 
   const overlayRef = useRef(null)
   const comunidadesRef = useRef(null)
@@ -56,11 +33,11 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
   useEffect(() => {
-    guardarCacheLikes(likesMap)
+    saveLikesCache(likesMap)
   }, [likesMap])
 
   const cargarFeedComunidades = async () => {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) {
       setCargandoFeed(false)
       return
@@ -68,7 +45,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
     try {
       const response = await fetch(`${API_BASE}/user/communities`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
 
       const comunidades = response.ok ? await response.json() : []
@@ -103,14 +80,14 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
       setCargandoFeed(false)
 
       if (todos.length > 0) {
-        const cachéActual = leerCacheLikes()
+        const cachéActual = loadLikesCache()
         const sinCache = todos.filter(p => !(p.id in cachéActual))
 
         if (sinCache.length > 0) {
           const likeStates = await Promise.allSettled(
             sinCache.map(p =>
               fetch(`${API_BASE}/posts/${p.id}/user-like`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: getAuthHeaders(token)
               })
                 .then(r => r.ok ? r.json() : { liked: false })
                 .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
@@ -190,7 +167,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   const toggleLike = async (post, e) => {
     e.stopPropagation()
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) return
     const id = post.id
     const yaLiked = likesMap[id]?.liked ?? false
@@ -205,7 +182,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     try {
       const res = await fetch(`${API_BASE}/posts/${id}/like`, {
         method: yaLiked ? 'DELETE' : 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
 
       if (!res.ok) throw new Error('Like failed')
@@ -246,13 +223,13 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const cerrarModal = () => setModalAbierto(false)
 
   const unirseAComunidad = async (comunidadId) => {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) return alert('Debes iniciar sesión')
     setUniendose(comunidadId)
     try {
       const r = await fetch(`${API_BASE}/communities/${comunidadId}/join`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
       if (r.ok) {
         const nueva = todasComunidades.find(c => c.id === comunidadId)

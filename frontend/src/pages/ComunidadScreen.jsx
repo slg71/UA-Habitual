@@ -5,8 +5,9 @@ import '../styles/comunidad.css'
 import BottomNav from '../components/BottomNav'
 import '../styles/perfil.css'
 import { getImagenComunidad } from '../components/comunidadImagenes'
-
-const API_BASE = '/api'
+import { API_BASE, getAuthHeaders } from '../utils/api'
+import { getStoredToken } from '../utils/auth'
+import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearTitulo = (str = '') =>
   str.split(/[\s_]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -24,29 +25,6 @@ const formatearFecha = iso =>
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
-// ─── Clave de caché por usuario ───────────────────────────────────────────────
-const getLikesCacheKey = () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) return 'habitual_likes_v1_guest'
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const userId = payload.id || payload.sub || payload.userId || 'unknown'
-    return `habitual_likes_v1_user_${userId}`
-  } catch {
-    return 'habitual_likes_v1_guest'
-  }
-}
-
-// ─── Utilidades de caché ──────────────────────────────────────────────────────
-const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}') }
-  catch { return {} }
-}
-const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)) }
-  catch {}
-}
-
 export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplorar, onPerfil, onCrear }) {
   const [miembro, setMiembro] = useState(true)
   const [numMiembros, setNumMiembros] = useState(null)
@@ -55,13 +33,13 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   const [postSeleccionado, setPostSeleccionado] = useState(null)
 
   // 1️⃣ Inicializar desde localStorage (con clave por usuario)
-  const [likesMap, setLikesMap] = useState(() => leerCacheLikes())
+  const [likesMap, setLikesMap] = useState(() => loadLikesCache())
 
   const imagenHero = getImagenComunidad(comunidad?.name)
 
   // 2️⃣ Persistir en localStorage en cada cambio
   useEffect(() => {
-    guardarCacheLikes(likesMap)
+    saveLikesCache(likesMap)
   }, [likesMap])
 
   const cargarContenidoComunidad = async () => {
@@ -84,18 +62,18 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
       // 3️⃣ Posts se muestran con caché inmediatamente
       setCargandoPosts(false)
 
-      const token = localStorage.getItem('token')
+      const token = getStoredToken()
       if (!token || !lista.length) return
 
       // 4️⃣ Solo consultamos los posts sin caché
-      const cacheActual = leerCacheLikes()
+      const cacheActual = loadLikesCache()
       const sinCache = lista.filter(p => !(p.id in cacheActual))
 
       if (sinCache.length > 0) {
         const results = await Promise.allSettled(
           sinCache.map(p =>
             fetch(`${API_BASE}/posts/${p.id}/user-like`, {
-              headers: { Authorization: `Bearer ${token}` }
+                headers: getAuthHeaders(token)
             })
               .then(r => r.ok ? r.json() : { liked: false })
               .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count || 0 }))
@@ -147,7 +125,7 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
 
   const toggleLike = async (post, e) => {
     e.stopPropagation()
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) return
     const id = post.id
     const yaLiked = likesMap[id]?.liked ?? false
@@ -161,7 +139,7 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
     try {
       const res = await fetch(`${API_BASE}/posts/${id}/like`, {
         method: yaLiked ? 'DELETE' : 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
       if (!res.ok) throw new Error('Like failed')
 
@@ -177,19 +155,19 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   }
 
   const toggleMiembro = async () => {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) return
     if (miembro) {
       await fetch(`${API_BASE}/communities/${comunidad.id}/leave`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
       setMiembro(false)
       setNumMiembros(n => Math.max(0, n - 1))
     } else {
       const response = await fetch(`${API_BASE}/communities/${comunidad.id}/join`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
       if (!response.ok) return
       setMiembro(true)

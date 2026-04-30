@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/crear.css'
 import BottomNav from '../components/BottomNav'
+import { API_BASE, getAuthHeaders } from '../utils/api'
+import { getStoredToken } from '../utils/auth'
 
 // Ejemplo con API:
 // const publicar = () => {
@@ -27,7 +29,7 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
 
     if (!token) {
       setError('No hay sesion activa. Inicia sesion para publicar.')
@@ -40,10 +42,8 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
         setLoadingActividades(true)
         setError('')
 
-        const response = await fetch('/api/user/communities', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+        const response = await fetch(`${API_BASE}/user/communities`, {
+          headers: getAuthHeaders(token)
         })
 
         const data = await response.json()
@@ -64,7 +64,7 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
   }, [])
 
   async function publicar() {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
 
     if (!token) {
       setError('No hay sesion activa. Inicia sesion para publicar.')
@@ -92,11 +92,9 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
         formData.append('media', archivo)
       }
 
-      const response = await fetch('/api/posts', {
+      const response = await fetch(`${API_BASE}/posts`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        headers: getAuthHeaders(token),
         body: formData
       })
 

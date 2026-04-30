@@ -2,6 +2,7 @@ import '../styles/habitual.css'
 import PhotoCollage from '../components/PhotoCollage'
 import logo from '../assets/logo.png'
 import { useState } from 'react'
+import { setStoredToken } from '../utils/auth'
 
 export default function LoginScreen({ onBack, onInicio }) {
   const [email, setEmail] = useState('')
@@ -35,7 +36,7 @@ export default function LoginScreen({ onBack, onInicio }) {
       }
 
       if (data.token) {
-        localStorage.setItem('token', data.token)
+        setStoredToken(data.token)
       }
 
       onInicio()

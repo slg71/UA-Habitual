@@ -3,32 +3,12 @@ import '../styles/habitual.css';
 import '../styles/inicio.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
+import { API_BASE, getAuthHeaders } from '../utils/api';
+import { getStoredToken } from '../utils/auth';
+import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-// ─── Clave de caché por usuario ───────────────────────────────────────────────
-const getLikesCacheKey = () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) return 'habitual_likes_v1_guest'
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const userId = payload.id || payload.sub || payload.userId || 'unknown'
-    return `habitual_likes_v1_user_${userId}`
-  } catch {
-    return 'habitual_likes_v1_guest'
-  }
-}
-
-// ─── Utilidades de caché ──────────────────────────────────────────────────────
-const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}'); }
-  catch { return {}; }
-};
-const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)); }
-  catch {}
-};
 
 export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion }) {
 
@@ -40,7 +20,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [postsPropios, setPostsPropios] = useState([]);
   const [postsLikes, setPostsLikes] = useState([]);
   const [objetivos, setObjetivos] = useState([]);
-  const [likesMap, setLikesMap] = useState(() => leerCacheLikes());
+  const [likesMap, setLikesMap] = useState(() => loadLikesCache());
   const [loading, setLoading] = useState(true);
   const [loadingLikes, setLoadingLikes] = useState(false);
   const [errorFetch, setErrorFetch] = useState('');
@@ -50,17 +30,17 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [errorObj, setErrorObj] = useState('');
   const [fechaCal, setFechaCal] = useState(new Date());
 
-  const token = localStorage.getItem('token');
-  const misHeaders = { 'Authorization': `Bearer ${token}` };
+  const token = getStoredToken();
+  const misHeaders = getAuthHeaders(token);
 
   useEffect(() => {
-    guardarCacheLikes(likesMap);
+    saveLikesCache(likesMap);
   }, [likesMap]);
 
   const parsearUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `/api${url}`;
+    return `${API_BASE}${url}`;
   };
 
   const formatearFecha = (iso) => {
@@ -82,12 +62,12 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const precargarLikes = async (listaDePosts) => {
     if (!listaDePosts.length || !token) return;
 
-    const cacheActual = leerCacheLikes();
+    const cacheActual = loadLikesCache();
     const sinCache = listaDePosts.filter(p => !(p.id in cacheActual));
 
     const countUpdates = await Promise.allSettled(
       listaDePosts.map(p =>
-        fetch(`/api/posts/${p.id}/likes/count`)
+        fetch(`${API_BASE}/posts/${p.id}/likes/count`)
           .then(r => r.ok ? r.json() : null)
           .then(d => d ? { id: p.id, count: d.count } : null)
       )
@@ -100,7 +80,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     if (sinCache.length > 0) {
       const results = await Promise.allSettled(
         sinCache.map(p =>
-          fetch(`/api/posts/${p.id}/user-like`, { headers: misHeaders })
+          fetch(`${API_BASE}/posts/${p.id}/user-like`, { headers: misHeaders })
             .then(r => r.ok ? r.json() : { liked: false })
             .then(d => ({ id: p.id, liked: !!d.liked }))
         )
@@ -146,13 +126,13 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     }));
 
     try {
-      const res = await fetch(`/api/posts/${postId}/like`, {
+      const res = await fetch(`${API_BASE}/posts/${postId}/like`, {
         method: yaTieneLike ? 'DELETE' : 'POST',
         headers: misHeaders
       });
       if (!res.ok) throw new Error('Like failed');
 
-      const countRes = await fetch(`/api/posts/${postId}/likes/count`);
+      const countRes = await fetch(`${API_BASE}/posts/${postId}/likes/count`);
       if (countRes.ok) {
         const data = await countRes.json();
         const countReal = typeof data.count === 'number' ? data.count : (yaTieneLike ? cantidadActual - 1 : cantidadActual + 1);
@@ -170,10 +150,10 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     const cargarDatosBasicos = async () => {
       try {
         const [resPerfil, resComunidades, resPosts, resObjetivos] = await Promise.all([
-          fetch('/api/profile', { headers: misHeaders }),
-          fetch('/api/user/communities', { headers: misHeaders }),
-          fetch('/api/posts/user', { headers: misHeaders }),
-          fetch('/api/goals', { headers: misHeaders })
+          fetch(`${API_BASE}/profile`, { headers: misHeaders }),
+          fetch(`${API_BASE}/user/communities`, { headers: misHeaders }),
+          fetch(`${API_BASE}/posts/user`, { headers: misHeaders }),
+          fetch(`${API_BASE}/goals`, { headers: misHeaders })
         ]);
 
         const dataPerfil = await resPerfil.json();
@@ -209,7 +189,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
       try {
         const listaComunidades = comunidades.length > 0
           ? comunidades
-          : await fetch('/api/user/communities', { headers: misHeaders })
+          : await fetch(`${API_BASE}/user/communities`, { headers: misHeaders })
               .then(r => r.ok ? r.json() : [])
               .then(d => Array.isArray(d) ? d : []);
 
@@ -221,7 +201,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
         const resultados = await Promise.allSettled(
           listaComunidades.map(c =>
-            fetch(`/api/community/${c.id}/posts`)
+            fetch(`${API_BASE}/community/${c.id}/posts`)
               .then(r => r.ok ? r.json() : [])
               .then(posts =>
                 (Array.isArray(posts) ? posts : []).map(p => ({
@@ -237,7 +217,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           .flatMap(r => r.value)
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        const cacheActual = leerCacheLikes();
+        const cacheActual = loadLikesCache();
         const sinCache = todosLosPosts.filter(p => !(p.id in cacheActual));
 
         let likesFinal = { ...cacheActual };
@@ -245,7 +225,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         if (sinCache.length > 0) {
           const resultadosLike = await Promise.allSettled(
             sinCache.map(p =>
-              fetch(`/api/posts/${p.id}/user-like`, { headers: misHeaders })
+              fetch(`${API_BASE}/posts/${p.id}/user-like`, { headers: misHeaders })
                 .then(r => r.ok ? r.json() : { liked: false })
                 .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count ?? 0 }))
             )
@@ -282,13 +262,13 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     setIsSaving(true);
     setErrorObj('');
     try {
-      const res = await fetch('/api/goals', {
+      const res = await fetch(`${API_BASE}/goals`, {
         method: 'POST',
         headers: { ...misHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoObjetivo)
       });
       if (!res.ok) throw new Error('No se pudo guardar el objetivo');
-      const peticionLista = await fetch('/api/goals', { headers: misHeaders });
+      const peticionLista = await fetch(`${API_BASE}/goals`, { headers: misHeaders });
       const nuevaLista = await peticionLista.json();
       setObjetivos(Array.isArray(nuevaLista) ? nuevaLista : []);
       setNuevoObjetivo({ title: '', difficulty: 'easy', community_id: '' });
@@ -519,7 +499,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
                     </div>
                     <input type="checkbox" checked={objetivo.status === 'completed'} onChange={async () => {
                       if (objetivo.status === 'completed') return;
-                      await fetch(`/api/goals/${objetivo.id}/complete`, { method: 'PATCH', headers: misHeaders });
+                      await fetch(`${API_BASE}/goals/${objetivo.id}/complete`, { method: 'PATCH', headers: misHeaders });
                       setObjetivos(objetivos.map(o => o.id === objetivo.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
                     }} />
                   </li>
