@@ -135,6 +135,7 @@ export default function App() {
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
           onComunidad={irAComunidad}
+          onVerPerfil={abrirPerfilUsuario}
         />
       )}
       {screen === 'perfil' && (
