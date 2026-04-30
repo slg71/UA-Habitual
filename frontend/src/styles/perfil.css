@@ -413,9 +413,9 @@
 
 .post-detail-likes {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .heart-icon {
@@ -426,10 +426,9 @@
 }
 
 .like-count {
-  font-size: 11px;
-  color: var(--hb-brown-mid); /* Cambiado */
-  font-weight: bold;
-  padding-left: 4px;
+  font-size: 16px;
+  color: var(--hb-brown-mid);
+  font-weight: 700;
 }
 
 .post-detail-caption,
@@ -550,6 +549,13 @@
 }
 .like-btn:active { transform: scale(1.3); }
 .like-btn.liked { color: #e05c7a; } /* Este color fijo está bien, resalta el "like" */
+
+/* Botón de like grande (vista detalle) */
+.like-btn--lg {
+  font-size: 28px; /* ligeramente mayor */
+  gap: 6px;
+}
+.like-btn--lg:active { transform: scale(1.18); }
 
 /* ── Acciones de Perfil (Botón y Ajustes) ── */
 .perfil-acciones {
