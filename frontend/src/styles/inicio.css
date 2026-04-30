@@ -129,6 +129,23 @@
 }
 .inicio-post--tall { min-height: 160px; }
 
+/* AJUSTADO: Fondo de posts con texto igual a la app */
+.like-btn.liked {
+  color: #ff4d4d !important;
+  text-shadow: 0 0 5px rgba(255, 77, 77, 0.4); /* Brillo sutil opcional */
+}
+
+/* Para el botón grande del modal */
+.like-btn--lg.liked {
+  color: #ff4d4d !important;
+}
+
+/* Fondo transparente para posts de texto */
+.perfil-post--sin-img {
+  background: transparent !important;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
 .inicio-post--texto {
   background: var(--hb-green);
   color: #fff;
