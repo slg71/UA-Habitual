@@ -7,21 +7,33 @@ import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 
 const API_BASE = '/api'
-const LIKES_CACHE_KEY = 'habitual_likes_v1'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
+// ─── Clave de caché por usuario ───────────────────────────────────────────────
+const getLikesCacheKey = () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return 'habitual_likes_v1_guest'
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.id || payload.sub || payload.userId || 'unknown'
+    return `habitual_likes_v1_user_${userId}`
+  } catch {
+    return 'habitual_likes_v1_guest'
+  }
+}
+
 // ─── Utilidades de caché ──────────────────────────────────────────────────────
 const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || '{}') }
+  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}') }
   catch { return {} }
 }
 
 const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(mapa)) }
+  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)) }
   catch {}
 }
 
@@ -35,7 +47,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
 
-  // 1️⃣ INICIALIZAR desde localStorage para que persista entre navegaciones
+  // 1️⃣ INICIALIZAR desde localStorage (con clave por usuario) para que persista entre navegaciones
   const [likesMap, setLikesMap] = useState(() => leerCacheLikes())
 
   const overlayRef = useRef(null)

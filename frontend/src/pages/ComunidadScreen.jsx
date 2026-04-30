@@ -7,7 +7,6 @@ import '../styles/perfil.css'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 
 const API_BASE = '/api'
-const LIKES_CACHE_KEY = 'habitual_likes_v1' // misma clave que InicioScreen
 
 const formatearTitulo = (str = '') =>
   str.split(/[\s_]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -25,13 +24,26 @@ const formatearFecha = iso =>
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
-// ─── Utilidades de caché (compartidas entre pantallas) ────────────────────────
+// ─── Clave de caché por usuario ───────────────────────────────────────────────
+const getLikesCacheKey = () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return 'habitual_likes_v1_guest'
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.id || payload.sub || payload.userId || 'unknown'
+    return `habitual_likes_v1_user_${userId}`
+  } catch {
+    return 'habitual_likes_v1_guest'
+  }
+}
+
+// ─── Utilidades de caché ──────────────────────────────────────────────────────
 const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || '{}') }
+  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}') }
   catch { return {} }
 }
 const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(mapa)) }
+  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)) }
   catch {}
 }
 
@@ -42,7 +54,7 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
   const [cargandoPosts, setCargandoPosts] = useState(true)
   const [postSeleccionado, setPostSeleccionado] = useState(null)
 
-  // 1️⃣ Inicializar desde localStorage
+  // 1️⃣ Inicializar desde localStorage (con clave por usuario)
   const [likesMap, setLikesMap] = useState(() => leerCacheLikes())
 
   const imagenHero = getImagenComunidad(comunidad?.name)

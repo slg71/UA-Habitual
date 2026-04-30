@@ -6,14 +6,27 @@ import BottomNav from '../components/BottomNav';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const LIKES_CACHE_KEY = 'habitual_likes_v1';
 
+// ─── Clave de caché por usuario ───────────────────────────────────────────────
+const getLikesCacheKey = () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return 'habitual_likes_v1_guest'
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const userId = payload.id || payload.sub || payload.userId || 'unknown'
+    return `habitual_likes_v1_user_${userId}`
+  } catch {
+    return 'habitual_likes_v1_guest'
+  }
+}
+
+// ─── Utilidades de caché ──────────────────────────────────────────────────────
 const leerCacheLikes = () => {
-  try { return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || '{}'); }
+  try { return JSON.parse(localStorage.getItem(getLikesCacheKey()) || '{}'); }
   catch { return {}; }
 };
 const guardarCacheLikes = (mapa) => {
-  try { localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(mapa)); }
+  try { localStorage.setItem(getLikesCacheKey(), JSON.stringify(mapa)); }
   catch {}
 };
 
@@ -194,7 +207,6 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     const cargarPostsLikeados = async () => {
       setLoadingLikes(true);
       try {
-        // Usar comunidades del estado o pedirlas si aún no están
         const listaComunidades = comunidades.length > 0
           ? comunidades
           : await fetch('/api/user/communities', { headers: misHeaders })
@@ -207,7 +219,6 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           return;
         }
 
-        // Cargar posts de todas las comunidades en paralelo
         const resultados = await Promise.allSettled(
           listaComunidades.map(c =>
             fetch(`/api/community/${c.id}/posts`)
@@ -226,7 +237,6 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           .flatMap(r => r.value)
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        // Para posts sin estado en caché, verificar con el servidor
         const cacheActual = leerCacheLikes();
         const sinCache = todosLosPosts.filter(p => !(p.id in cacheActual));
 
@@ -250,7 +260,6 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           setLikesMap(prev => ({ ...prev, ...likesFinal }));
         }
 
-        // Filtrar solo los posts likeados
         const postsFiltrados = todosLosPosts.filter(p => likesFinal[p.id]?.liked === true);
         setPostsLikes(postsFiltrados);
 
