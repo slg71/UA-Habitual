@@ -7,7 +7,7 @@ import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken } from '../utils/auth'
+import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearFecha = iso =>
@@ -15,7 +15,7 @@ const formatearFecha = iso =>
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
-export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad }) {
+export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad, onVerPerfil }) {
   const [misComunidades, setMisComunidades] = useState([])
   const [todasComunidades, setTodasComunidades] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
@@ -31,7 +31,9 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   const overlayRef = useRef(null)
   const comunidadesRef = useRef(null)
-  const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
+  const isDraggingRef = useRef(false)
+  const startXRef = useRef(0)
+  const scrollLeftRef = useRef(0)
 
   // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
   useEffect(() => {
@@ -150,27 +152,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     }
   }
 
-  const onMouseDown = (e) => {
-    const el = comunidadesRef.current
-    dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
-    el.style.cursor = 'grabbing'
-  }
-  const onMouseLeave = () => {
-    dragState.current.isDown = false
-    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
-  }
-  const onMouseUp = () => {
-    dragState.current.isDown = false
-    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
-  }
-  const onMouseMove = (e) => {
-    if (!dragState.current.isDown) return
-    e.preventDefault()
-    const el = comunidadesRef.current
-    const x = e.pageX - el.offsetLeft
-    const walk = (x - dragState.current.startX) * 1.2
-    el.scrollLeft = dragState.current.scrollLeft - walk
-  }
+  // referencias para controlar el scroll por flechas
 
   useEffect(() => {
     cargarFeedComunidades()
@@ -217,6 +199,58 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     }
   }
 
+  const abrirPerfil = (userId) => {
+    if (!onVerPerfil || !userId) return
+    const miId = getUserIdFromToken()
+    onVerPerfil(String(userId) === String(miId) ? null : userId)
+  }
+
+  // handlers para arrastrar la lista de comunidades
+  const handleMouseDown = (e) => {
+    const el = comunidadesRef.current
+    if (!el) return
+    isDraggingRef.current = true
+    el.classList.add('dragging')
+    startXRef.current = e.pageX - el.offsetLeft
+    scrollLeftRef.current = el.scrollLeft
+  }
+
+  const handleMouseMove = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !isDraggingRef.current) return
+    e.preventDefault()
+    const x = e.pageX - el.offsetLeft
+    const walk = x - startXRef.current
+    el.scrollLeft = scrollLeftRef.current - walk
+  }
+
+  const handleMouseUp = () => {
+    const el = comunidadesRef.current
+    if (!el) return
+    isDraggingRef.current = false
+    el.classList.remove('dragging')
+  }
+
+  const handleTouchStart = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !e.touches?.length) return
+    isDraggingRef.current = true
+    startXRef.current = e.touches[0].pageX - el.offsetLeft
+    scrollLeftRef.current = el.scrollLeft
+  }
+
+  const handleTouchMove = (e) => {
+    const el = comunidadesRef.current
+    if (!el || !isDraggingRef.current || !e.touches?.length) return
+    const x = e.touches[0].pageX - el.offsetLeft
+    const walk = x - startXRef.current
+    el.scrollLeft = scrollLeftRef.current - walk
+  }
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false
+  }
+
   const abrirModal = async () => {
     setModalAbierto(true)
     setCargando(true)
@@ -256,6 +290,12 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   const yaMiembro = (id) => misComunidades.some(c => c.id === id)
 
+  const scrollComunidades = (offset = 200) => {
+    const el = comunidadesRef.current
+    if (!el) return
+    el.scrollBy({ left: offset, behavior: 'smooth' })
+  }
+
   return (
     <div className="hb-screen inicio-screen">
 
@@ -271,15 +311,19 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           <button className="inicio-add-btn" aria-label="Añadir comunidad" onClick={abrirModal}>＋</button>
         </h2>
 
-        <div
-          className="inicio-comunidades"
-          ref={comunidadesRef}
-          onMouseDown={onMouseDown}
-          onMouseLeave={onMouseLeave}
-          onMouseUp={onMouseUp}
-          onMouseMove={onMouseMove}
-        >
-          {misComunidades.length === 0 ? (
+        <div className="inicio-comunidades-wrapper">
+          <div
+            className="inicio-comunidades"
+            ref={comunidadesRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {misComunidades.length === 0 ? (
             <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>
               Aún no perteneces a ninguna. ¡Pulsa ＋ para unirte!
             </p>
@@ -297,6 +341,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
               </div>
             ))
           )}
+          </div>
         </div>
       </section>
 
@@ -344,7 +389,16 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
                   ) : null}
                   <div className="post-footer-mini">
                     {post.username && (
-                      <span className="post-autor">@{post.username}</span>
+                      <button
+                        type="button"
+                        className="post-autor post-autor--clickable"
+                        onClick={e => {
+                          e.stopPropagation()
+                          abrirPerfil(post.user_id)
+                        }}
+                      >
+                        @{post.username}
+                      </button>
                     )}
                     <p>{post.content}</p>
                     <span className="post-meta">
@@ -377,7 +431,13 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
               }}>
                 {postSeleccionado.username?.[0]?.toUpperCase()}
               </div>
-              <span className="post-detail-username">{postSeleccionado.username}</span>
+              <button
+                type="button"
+                className="post-detail-username post-detail-username-btn"
+                onClick={() => abrirPerfil(postSeleccionado.user_id)}
+              >
+                {postSeleccionado.username}
+              </button>
               {postSeleccionado.community_name && (
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
                   #{postSeleccionado.community_name}

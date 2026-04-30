@@ -6,7 +6,7 @@ import BottomNav from '../components/BottomNav'
 import '../styles/perfil.css'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken } from '../utils/auth'
+import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearTitulo = (str = '') =>
@@ -25,7 +25,7 @@ const formatearFecha = iso =>
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
-export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplorar, onPerfil, onCrear }) {
+export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplorar, onPerfil, onCrear, onVerPerfil }) {
   const [miembro, setMiembro] = useState(true)
   const [numMiembros, setNumMiembros] = useState(null)
   const [posts, setPosts] = useState([])
@@ -154,6 +154,12 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
     }
   }
 
+  const abrirPerfil = (userId) => {
+    if (!onVerPerfil || !userId) return
+    const miId = getUserIdFromToken()
+    onVerPerfil(String(userId) === String(miId) ? null : userId)
+  }
+
   const toggleMiembro = async () => {
     const token = getStoredToken()
     if (!token) return
@@ -228,7 +234,18 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
                     </div>
                   ) : null}
                   <div className="post-footer-mini">
-                    {post.username && <span className="post-autor">@{post.username}</span>}
+                    {post.username && (
+                      <button
+                        type="button"
+                        className="post-autor post-autor--clickable"
+                        onClick={e => {
+                          e.stopPropagation()
+                          abrirPerfil(post.user_id)
+                        }}
+                      >
+                        @{post.username}
+                      </button>
+                    )}
                     <p>{post.content}</p>
                     <span className="post-meta">
                       {formatearFecha(post.created_at)}
@@ -251,7 +268,13 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--hb-green-lt)', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: 'var(--hb-green-dk)', flexShrink: 0 }}>
                 {postSeleccionado.username?.[0]?.toUpperCase()}
               </div>
-              <span className="post-detail-username">{postSeleccionado.username}</span>
+              <button
+                type="button"
+                className="post-detail-username post-detail-username-btn"
+                onClick={() => abrirPerfil(postSeleccionado.user_id)}
+              >
+                {postSeleccionado.username}
+              </button>
             </div>
             {postSeleccionado.media_url ? (
               <img src={parsearUrl(postSeleccionado.media_url)} alt="Contenido" className="post-detail-img"

@@ -4,18 +4,20 @@ import '../styles/inicio.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
 import { API_BASE, getAuthHeaders } from '../utils/api';
-import { getStoredToken } from '../utils/auth';
+import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion }) {
+export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, onConfiguracion, onVerPerfil, perfilVisitadoId }) {
 
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
   const [postSeleccionado, setPostSeleccionado] = useState(null);
   const [user, setUser] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loadingFollow, setLoadingFollow] = useState(false);
   const [comunidades, setComunidades] = useState([]);
   const [postsPropios, setPostsPropios] = useState([]);
   const [postsLikes, setPostsLikes] = useState([]);
@@ -32,6 +34,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
+  const esPerfilPropio = !perfilVisitadoId;
 
   useEffect(() => {
     saveLikesCache(likesMap);
@@ -143,42 +146,101 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     }
   };
 
+  const abrirPerfil = (userId) => {
+    if (!onVerPerfil || !userId) return;
+    const miId = getUserIdFromToken();
+    onVerPerfil(String(userId) === String(miId) ? null : userId);
+  };
+
+  const toggleFollow = async () => {
+    if (!perfilVisitadoId || !token) return;
+
+    setLoadingFollow(true);
+    try {
+      const endpoint = isFollowing
+        ? `${API_BASE}/users/${perfilVisitadoId}/unfollow`
+        : `${API_BASE}/users/${perfilVisitadoId}/follow`;
+      const res = await fetch(endpoint, {
+        method: isFollowing ? 'DELETE' : 'POST',
+        headers: misHeaders
+      });
+
+      if (!res.ok) {
+        throw new Error('No se pudo actualizar el follow');
+      }
+
+      setIsFollowing(prev => !prev);
+      setUser(prev => prev ? {
+        ...prev,
+        follower_count: Math.max(0, (prev.follower_count || 0) + (isFollowing ? -1 : 1))
+      } : prev);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingFollow(false);
+    }
+  };
+
   // Carga inicial: perfil, comunidades, posts propios y objetivos
   useEffect(() => {
-    if (!token) { setErrorFetch('No hay sesión activa.'); setLoading(false); return; }
+    const cargarPerfil = async () => {
+      if (!token && !perfilVisitadoId) {
+        setErrorFetch('No hay sesión activa.');
+        setLoading(false);
+        return;
+      }
 
-    const cargarDatosBasicos = async () => {
+      setLoading(true);
+      setErrorFetch('');
+      setShowProgreso(false);
+      setShowFormObj(false);
+      setPostSeleccionado(null);
+      setTabActual('publicaciones');
+
       try {
-        const [resPerfil, resComunidades, resPosts, resObjetivos] = await Promise.all([
-          fetch(`${API_BASE}/profile`, { headers: misHeaders }),
-          fetch(`${API_BASE}/user/communities`, { headers: misHeaders }),
-          fetch(`${API_BASE}/posts/user`, { headers: misHeaders }),
-          fetch(`${API_BASE}/goals`, { headers: misHeaders })
+        const urlPerfil = perfilVisitadoId ? `${API_BASE}/users/${perfilVisitadoId}` : `${API_BASE}/profile`;
+        const urlPosts = perfilVisitadoId ? `${API_BASE}/users/${perfilVisitadoId}/posts` : `${API_BASE}/posts/user`;
+
+        const [resPerfil, resComunidades, resPosts, resObjetivos, resSeguimiento] = await Promise.all([
+          fetch(urlPerfil, perfilVisitadoId ? undefined : { headers: misHeaders }),
+          perfilVisitadoId ? Promise.resolve(null) : fetch(`${API_BASE}/user/communities`, { headers: misHeaders }),
+          fetch(urlPosts, perfilVisitadoId ? undefined : { headers: misHeaders }),
+          perfilVisitadoId ? Promise.resolve(null) : fetch(`${API_BASE}/goals`, { headers: misHeaders }),
+          perfilVisitadoId && token ? fetch(`${API_BASE}/users/${perfilVisitadoId}/is-following`, { headers: misHeaders }) : Promise.resolve(null)
         ]);
 
-        const dataPerfil = await resPerfil.json();
+        const dataPerfil = resPerfil.ok ? await resPerfil.json() : null;
+        if (!dataPerfil) throw new Error('No se pudo cargar el perfil');
         if (dataPerfil.error) throw new Error(dataPerfil.error);
 
-        const dataComunidades = resComunidades.ok ? await resComunidades.json() : [];
-        const dataPosts = await resPosts.json();
-        const dataObjetivos = resObjetivos.ok ? await resObjetivos.json() : [];
+        const dataComunidades = resComunidades && resComunidades.ok ? await resComunidades.json() : [];
+        const dataPosts = resPosts.ok ? await resPosts.json() : [];
+        const dataObjetivos = resObjetivos && resObjetivos.ok ? await resObjetivos.json() : [];
+        const dataSeguimiento = resSeguimiento && resSeguimiento.ok ? await resSeguimiento.json() : null;
 
         setUser(dataPerfil);
         setComunidades(Array.isArray(dataComunidades) ? dataComunidades : []);
         setObjetivos(Array.isArray(dataObjetivos) ? dataObjetivos : []);
+        setIsFollowing(!!dataSeguimiento?.is_following);
 
         const listaPosts = Array.isArray(dataPosts) ? dataPosts : [];
         setPostsPropios(listaPosts);
-        precargarLikes(listaPosts);
+        if (token) {
+          precargarLikes(listaPosts);
+        }
       } catch (err) {
         setErrorFetch(err.message);
+        setUser(null);
+        setComunidades([]);
+        setObjetivos([]);
+        setPostsPropios([]);
       } finally {
         setLoading(false);
       }
     };
 
-    cargarDatosBasicos();
-  }, []);
+    cargarPerfil();
+  }, [perfilVisitadoId]);
 
   // Carga del tab likes
   useEffect(() => {
@@ -300,15 +362,18 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   };
 
   const miProgreso = user?.score ? Math.min(100, user.score % 100) : 0;
-  const misPostsParaMostrar = tabActual === 'likes' ? postsLikes : postsPropios;
-  const isCargandoPosts = tabActual === 'likes' ? loadingLikes : loading;
+  const mostrarLikes = esPerfilPropio && tabActual === 'likes';
+  const misPostsParaMostrar = mostrarLikes ? postsLikes : postsPropios;
+  const isCargandoPosts = mostrarLikes ? loadingLikes : loading;
 
   return (
     <div className="hb-screen perfil-screen">
 
-      <button className="perfil-nivel-badge" onClick={() => setShowProgreso(true)}>
-        <span className="nivel-numero">{user?.rank_id || 1}</span>
-      </button>
+      {esPerfilPropio && (
+        <button className="perfil-nivel-badge" onClick={() => setShowProgreso(true)}>
+          <span className="nivel-numero">{user?.rank_id || 1}</span>
+        </button>
+      )}
 
       <header className="perfil-header">
         <div className="perfil-portada">
@@ -324,8 +389,20 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
               <span>@{user?.username || '—'}</span>
             </div>
             <div className="perfil-acciones">
-              <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
-              <button className="perfil-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+              {esPerfilPropio ? (
+                <>
+                  <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
+                  <button className="perfil-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+                </>
+              ) : (
+                <button
+                  className="hb-btn hb-btn--primary btn-seguir"
+                  onClick={toggleFollow}
+                  disabled={loadingFollow || !token}
+                >
+                  {!token ? 'Inicia sesión' : isFollowing ? 'Siguiendo' : 'Seguir'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -350,7 +427,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
       <div className="perfil-tabs">
         <button className={`tab-btn ${tabActual === 'publicaciones' ? 'active' : ''}`} onClick={() => setTabActual('publicaciones')}>Publicaciones</button>
-        <button className={`tab-btn ${tabActual === 'likes' ? 'active' : ''}`} onClick={() => setTabActual('likes')}>Likes</button>
+        {esPerfilPropio && <button className={`tab-btn ${tabActual === 'likes' ? 'active' : ''}`} onClick={() => setTabActual('likes')}>Likes</button>}
       </div>
 
       <section className="perfil-galeria">
@@ -363,6 +440,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         {!isCargandoPosts && misPostsParaMostrar.map(post => {
           const liked = likesMap[post.id]?.liked ?? false;
           const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0;
+          const puedeAbrirPerfil = !!onVerPerfil && post.user_id && String(post.user_id) !== String(user?.id);
           return (
             <div
               key={post.id}
@@ -372,6 +450,18 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
             >
               {post.media_url && <img src={parsearUrl(post.media_url)} alt="Post user" />}
               <div className="post-footer-mini">
+                {puedeAbrirPerfil ? (
+                  <button
+                    type="button"
+                    className="post-autor post-autor--clickable"
+                    onClick={e => {
+                      e.stopPropagation()
+                      abrirPerfil(post.user_id)
+                    }}
+                  >
+                    @{post.username || 'Usuario'}
+                  </button>
+                ) : null}
                 <p>{post.content}</p>
                 <span className="post-meta">
                   {formatearFecha(post.created_at)}
@@ -390,8 +480,17 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           <div className="post-detail-card" onClick={e => e.stopPropagation()}>
             <div className="post-detail-header">
               <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" />
-              <span className="post-detail-username">{postSeleccionado.username || user?.username}</span>
-              <button className="post-detail-btn-seguir">Tu post</button>
+              {postSeleccionado.user_id && String(postSeleccionado.user_id) !== String(user?.id) ? (
+                <button
+                  type="button"
+                  className="post-detail-username post-detail-username-btn"
+                  onClick={() => abrirPerfil(postSeleccionado.user_id)}
+                >
+                  {postSeleccionado.username || user?.username}
+                </button>
+              ) : (
+                <span className="post-detail-username">{postSeleccionado.username || user?.username}</span>
+              )}
             </div>
             {postSeleccionado.media_url && (
               <img src={parsearUrl(postSeleccionado.media_url)} alt="Contenido" className="post-detail-img" />
@@ -419,7 +518,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         </div>
       )}
 
-      {showProgreso && (
+      {esPerfilPropio && showProgreso && (
         <div className="modal-overlay" onClick={() => setShowProgreso(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
@@ -510,7 +609,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         </div>
       )}
 
-      <BottomNav active="perfil" onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />
+      <BottomNav active={esPerfilPropio ? 'perfil' : ''} onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />
     </div>
   );
 }

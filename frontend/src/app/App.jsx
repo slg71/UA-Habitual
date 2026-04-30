@@ -12,6 +12,7 @@ import { clearStoredToken, getStoredToken } from '../utils/auth'
 
 const SCREEN_STORAGE_KEY = 'habitual_last_screen_v1'
 const COMMUNITY_STORAGE_KEY = 'habitual_last_community_v1'
+const PROFILE_STORAGE_KEY = 'habitual_last_profile_user_v1'
 const AUTH_SCREENS = new Set(['inicio', 'explorar', 'perfil', 'configuracion', 'crear'])
 const PUBLIC_SCREENS = new Set(['welcome', 'register', 'login'])
 
@@ -32,6 +33,7 @@ function getInitialScreen() {
 
 export default function App() {
   const [screen, setScreen] = useState(() => getInitialScreen())
+  const [perfilVisitadoId, setPerfilVisitadoId] = useState(() => localStorage.getItem(PROFILE_STORAGE_KEY) || null)
   const [comunidadActual, setComunidadActual] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(COMMUNITY_STORAGE_KEY) || 'null')
@@ -43,20 +45,37 @@ export default function App() {
   useEffect(() => {
     if (screen === 'comunidad') {
       localStorage.setItem(SCREEN_STORAGE_KEY, 'comunidad')
+      localStorage.removeItem(PROFILE_STORAGE_KEY)
       return
     }
 
     if (screen === 'welcome' || screen === 'register' || screen === 'login' || AUTH_SCREENS.has(screen)) {
       localStorage.setItem(SCREEN_STORAGE_KEY, screen)
+      if (screen !== 'perfil' || !perfilVisitadoId) {
+        localStorage.removeItem(PROFILE_STORAGE_KEY)
+      }
     }
-  }, [screen])
+  }, [screen, perfilVisitadoId])
 
   const handleLogout = () => {
     clearStoredToken()
     localStorage.removeItem(SCREEN_STORAGE_KEY)
     localStorage.removeItem(COMMUNITY_STORAGE_KEY)
+    localStorage.removeItem(PROFILE_STORAGE_KEY)
     setComunidadActual(null)
+    setPerfilVisitadoId(null)
     setScreen('welcome')
+  }
+
+  const abrirPerfilUsuario = (userId = null) => {
+    const siguienteId = userId ? String(userId) : null
+    setPerfilVisitadoId(siguienteId)
+    if (siguienteId) {
+      localStorage.setItem(PROFILE_STORAGE_KEY, siguienteId)
+    } else {
+      localStorage.removeItem(PROFILE_STORAGE_KEY)
+    }
+    setScreen('perfil')
   }
 
   const irAComunidad = (comunidad) => {
@@ -89,17 +108,18 @@ export default function App() {
         <InicioScreen
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
           onComunidad={irAComunidad} 
+          onVerPerfil={abrirPerfilUsuario}
         />
       )}
       {screen === 'explorar' && (
         <ExplorarScreen
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
           onComunidad={irAComunidad}
@@ -109,9 +129,11 @@ export default function App() {
         <PerfilScreen
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onCrear={() => setScreen('crear')}
           onConfiguracion={() => setScreen('configuracion')}
+          onVerPerfil={abrirPerfilUsuario}
+          perfilVisitadoId={perfilVisitadoId}
         />
       )}
       {screen === 'configuracion' && (
@@ -119,7 +141,7 @@ export default function App() {
           onBack={() => setScreen('inicio')}
           onInicio={() => setScreen('inicio')}
           onExplorar={() => setScreen('explorar')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onLogout={handleLogout}
           onCrear={() => setScreen('crear')}
         />
@@ -128,7 +150,7 @@ export default function App() {
         <CrearScreen
           onInicio={() => setScreen('inicio')}
           onExplorar={() => setScreen('explorar')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onCrear={() => setScreen('crear')}
           onConfiguracion={() => setScreen('configuracion')}
         />
@@ -139,8 +161,9 @@ export default function App() {
           onBack={() => setScreen('inicio')}
           onInicio={() => setScreen('inicio')}
           onExplorar={() => setScreen('explorar')}
-          onPerfil={() => setScreen('perfil')}
+          onPerfil={() => abrirPerfilUsuario(null)}
           onCrear={() => setScreen('crear')}
+          onVerPerfil={abrirPerfilUsuario}
         />
       )}
     </>

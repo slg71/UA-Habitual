@@ -203,6 +203,36 @@ const getPostsForUser = (req, res) => {
     });
 };
 
+const getPostsByUserId = (req, res) => {
+    const { user_id } = req.params;
+    const query = `
+        SELECT 
+            p.id, p.user_id, p.community_id, p.content, p.created_at,
+            u.username, u.score, u.streak,
+            c.name as community_name,
+            MAX(m.url) as media_url,
+            COUNT(DISTINCT pl.user_id) as likes_count,
+            COUNT(DISTINCT com.id) as comments_count
+        FROM posts p
+        JOIN users u ON u.id = p.user_id
+        JOIN communities c ON c.id = p.community_id
+        LEFT JOIN post_media pm ON pm.post_id = p.id
+        LEFT JOIN media m ON m.id = pm.media_id
+        LEFT JOIN post_likes pl ON pl.post_id = p.id
+        LEFT JOIN comments com ON com.post_id = p.id
+        WHERE p.user_id = ?
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.username, u.score, u.streak, c.name
+        ORDER BY p.created_at DESC
+    `;
+
+    db.execute(query, [user_id], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al cargar posts' });
+        }
+        return res.json(rows);
+    });
+};
+
 const getFollowingPosts = (req, res) => {
     const userId = req.user.id;
     const query = `
@@ -241,5 +271,6 @@ module.exports = {
     getPostById,
     deletePost,
     getPostsForUser,
+    getPostsByUserId,
     getFollowingPosts
 };
