@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/configuracion.css'
 import BottomNav from '../components/BottomNav'
+import { API_BASE, getAuthHeaders } from '../utils/api'
+import { getStoredToken } from '../utils/auth'
 
 // Ejemplo con API:
 // const guardar = () => {
@@ -23,7 +25,22 @@ import BottomNav from '../components/BottomNav'
 export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPerfil, onLogout, onCrear }) {
   const [modoOscuro, setModoOscuro]           = useState(document.body.classList.contains('dark-mode'))
   const [textoGrande, setTextoGrande]         = useState(document.body.classList.contains('texto-grande'))
-  const [notificaciones, setNotificaciones]   = useState(true)
+  const [altoContraste, setAltoContraste]     = useState(document.body.classList.contains('alto-contraste'))
+  const [editPerfilOpen, setEditPerfilOpen]   = useState(false)
+  const [perfilUsername, setPerfilUsername]   = useState('')
+  const [editUsername, setEditUsername]       = useState('')
+  const [perfilEmail, setPerfilEmail]         = useState('')
+  const [editEmail, setEditEmail]             = useState('')
+  const [newPassword, setNewPassword]         = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [avatarFile, setAvatarFile]           = useState(null)
+  const [bannerFile, setBannerFile]           = useState(null)
+  const [avatarPreview, setAvatarPreview]     = useState('')
+  const [bannerPreview, setBannerPreview]     = useState('')
+  const [editError, setEditError]             = useState('')
+  const [editSuccess, setEditSuccess]         = useState('')
+  const [editLoading, setEditLoading]         = useState(false)
+  const [editSaving, setEditSaving]           = useState(false)
   const [modalEliminar, setModalEliminar]     = useState(false)
   const [passEliminar, setPassEliminar]       = useState('')
   const [confirmPass, setConfirmPass]         = useState('')
@@ -41,6 +58,132 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
     if (textoGrande) document.body.classList.add('texto-grande')
     else document.body.classList.remove('texto-grande')
   }, [textoGrande])
+
+  // Efecto para aplicar/quitar el alto contraste en toda la app
+  useEffect(() => {
+    if (altoContraste) document.body.classList.add('alto-contraste')
+    else document.body.classList.remove('alto-contraste')
+  }, [altoContraste])
+
+  useEffect(() => {
+    if (!editPerfilOpen) return
+
+    const token = getStoredToken()
+    if (!token) {
+      setEditError('No hay sesión activa.')
+      return
+    }
+
+    setEditLoading(true)
+    setEditError('')
+    setEditSuccess('')
+
+    fetch(`${API_BASE}/profile`, {
+      headers: {
+        ...getAuthHeaders(token),
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(async response => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'No se pudo cargar el perfil')
+        return data
+      })
+      .then(data => {
+        setPerfilUsername(data.username || '')
+        setEditUsername(data.username || '')
+        setPerfilEmail(data.email || '')
+        setEditEmail(data.email || '')
+        setAvatarPreview(data.avatar_url || '')
+        setBannerPreview(data.banner_url || '')
+      })
+      .catch(error => {
+        setEditError(error.message || 'No se pudo cargar el perfil')
+      })
+      .finally(() => setEditLoading(false))
+  }, [editPerfilOpen])
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview)
+      }
+      if (bannerPreview && bannerPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(bannerPreview)
+      }
+    }
+  }, [avatarPreview, bannerPreview])
+
+  function guardarPerfil() {
+    setEditError('')
+    setEditSuccess('')
+
+    if (!editUsername) {
+      setEditError('El nombre de usuario es obligatorio.')
+      return
+    }
+
+    if (!editEmail) {
+      setEditError('El email es obligatorio.')
+      return
+    }
+
+    if (newPassword || confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        setEditError('Las contraseñas no coinciden.')
+        return
+      }
+      if (newPassword.length < 6) {
+        setEditError('La contraseña debe tener al menos 6 caracteres.')
+        return
+      }
+    }
+
+    const token = getStoredToken()
+    if (!token) {
+      setEditError('No hay sesión activa.')
+      return
+    }
+
+    const payload = {}
+    if (editUsername !== perfilUsername) payload.username = editUsername
+    if (editEmail !== perfilEmail) payload.email = editEmail
+    if (newPassword) payload.password = newPassword
+    if (!payload.username && !payload.email && !payload.password) {
+      setEditError('No hay cambios para guardar.')
+      return
+    }
+
+    setEditSaving(true)
+
+    fetch(`${API_BASE}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(token)
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(async response => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Error al actualizar perfil')
+        return data
+      })
+      .then(() => {
+        setPerfilUsername(editUsername)
+        setPerfilEmail(editEmail)
+        setNewPassword('')
+        setConfirmPassword('')
+        setAvatarFile(null)
+        setBannerFile(null)
+        setEditSuccess('Perfil actualizado correctamente.')
+        setEditPerfilOpen(false)
+      })
+      .catch(error => {
+        setEditError(error.message || 'Error al actualizar perfil')
+      })
+      .finally(() => setEditSaving(false))
+  }
 
   function confirmarEliminar() {
     if (!passEliminar || !confirmPass) { setErrorEliminar('Rellena ambos campos'); return }
@@ -79,10 +222,6 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
       {/* ── Opciones ── */}
       <div className="cfg-lista">
 
-        <div className="cfg-fila">
-          <span>Seleccionar Idioma</span>
-        </div>
-
         {/*toggle de Texto Grande */}
         <div className="cfg-fila">
           <span>Tamaño de texto</span>
@@ -99,13 +238,13 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
         </div>
 
         <div className="cfg-fila">
-          <span>Notificaciones</span>
-          <div className={`cfg-toggle ${notificaciones ? 'cfg-toggle--on' : ''}`} onClick={() => setNotificaciones(v => !v)}>
+          <span>Alto contraste</span>
+          <div className={`cfg-toggle ${altoContraste ? 'cfg-toggle--on' : ''}`} onClick={() => setAltoContraste(v => !v)}>
             <span className="cfg-toggle-bola" />
           </div>
         </div>
 
-        <div className="cfg-fila">
+        <div className="cfg-fila" style={{ cursor: 'pointer' }} onClick={() => { setEditPerfilOpen(true); setEditError(''); setEditSuccess('') }}>
           <span>Editar perfil</span>
         </div>
 
@@ -122,7 +261,7 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
 
       {/* ── Botones ── */}
       <div className="cfg-botones">
-        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setNotificaciones(true) }}>Reestablecer</button>
+        <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModoOscuro(false); setTextoGrande(false); setAltoContraste(false) }}>Reestablecer</button>
         <button className="hb-btn hb-btn--primary cfg-btn" onClick={() => alert('Guardado ✓')}>Guardar</button>
       </div>
 
@@ -134,7 +273,133 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
         onCrear={onCrear}
       />
 
-      {/* ── Modal eliminar cuenta ── */}
+      {/* ── Modal editar perfil ── */}
+      {editPerfilOpen && (
+        <div className="cfg-overlay">
+          <div className="cfg-modal">
+
+            <h2 className="cfg-modal-titulo">Editar perfil</h2>
+            <p className="cfg-modal-texto">Actualiza tu nombre, email, contraseña o imágenes de perfil.</p>
+
+            {editLoading ? (
+              <p className="cfg-modal-texto">Cargando información...</p>
+            ) : (
+              <div className="cfg-modal-scrollable">
+                <form className="hb-form" onSubmit={e => { e.preventDefault(); guardarPerfil() }}>
+                  <div className="hb-field">
+                    <label>Nombre de usuario</label>
+                    <input
+                      type="text"
+                      placeholder="Tu nombre de usuario"
+                      value={editUsername}
+                      onChange={e => setEditUsername(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="hb-field">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      placeholder="usuario@ejemplo.com"
+                      value={editEmail}
+                      onChange={e => setEditEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="hb-field">
+                    <label>Foto de perfil</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0] || null
+                        setAvatarFile(file)
+                        if (file) {
+                          const url = URL.createObjectURL(file)
+                          setAvatarPreview(url)
+                        }
+                      }}
+                    />
+                    {avatarPreview && (
+                      <img src={avatarPreview} alt="Previsualización avatar" className="cfg-image-preview" />
+                    )}
+                  </div>
+
+                  <div className="hb-field">
+                    <label>Foto de portada</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0] || null
+                        setBannerFile(file)
+                        if (file) {
+                          const url = URL.createObjectURL(file)
+                          setBannerPreview(url)
+                        }
+                      }}
+                    />
+                    {bannerPreview && (
+                      <img src={bannerPreview} alt="Previsualización portada" className="cfg-image-preview" />
+                    )}
+                  </div>
+
+                  <div className="hb-field">
+                    <label>Nueva contraseña</label>
+                    <input
+                      type="password"
+                      placeholder="Nueva contraseña"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="hb-field">
+                    <label>Confirmar contraseña</label>
+                    <input
+                      type="password"
+                      placeholder="Repite la contraseña"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+
+                  {editError && <p className="cfg-error">{editError}</p>}
+                  {editSuccess && <p className="cfg-success">{editSuccess}</p>}
+                </form>
+              </div>
+            )}
+
+            <div className="cfg-botones">
+              <button
+                type="button"
+                className="hb-btn hb-btn--secondary cfg-btn"
+                onClick={() => {
+                  setEditPerfilOpen(false)
+                  setEditError('')
+                  setNewPassword('')
+                  setConfirmPassword('')
+                  setAvatarFile(null)
+                  setBannerFile(null)
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="hb-btn hb-btn--primary cfg-btn"
+                onClick={guardarPerfil}
+                disabled={editSaving}
+              >
+                {editSaving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal editar perfil ── */}
       {modalEliminar && (
         <div className="cfg-overlay">
           <div className="cfg-modal">
