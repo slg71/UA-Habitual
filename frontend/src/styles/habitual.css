@@ -284,3 +284,25 @@ body.texto-grande .hb-subtitle {
 body.texto-grande .inicio-nav-item span:first-child {
   font-size: 26px !important;
 }
+
+/* Posts en modo texto grande - Una columna */
+body.texto-grande .inicio-fila {
+  flex-direction: column !important;
+}
+
+body.texto-grande .inicio-post {
+  width: 100% !important;
+  flex: none !important;
+}
+
+body.texto-grande .inicio-post--texto {
+  flex: none !important;
+}
+
+body.texto-grande .inicio-post--audio {
+  flex: none !important;
+}
+
+body.texto-grande .perfil-galeria {
+  columns: 1 !important;
+}
