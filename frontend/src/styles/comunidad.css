@@ -18,11 +18,10 @@
   padding: 20px;
   border-bottom-left-radius: 24px;
   border-bottom-right-radius: 24px;
-  overflow: hidden;   /* La imagen respeta el border-radius */
+  overflow: hidden; 
   margin-bottom: 0;
 }
 
-/* Foto real de fondo */
 .comunidad-hero-img {
   position: absolute;
   inset: 0;
@@ -33,7 +32,6 @@
   border-bottom-right-radius: 24px;
 }
 
-/* Gradiente oscuro encima de la foto para legibilidad */
 .comunidad-hero-overlay {
   position: absolute;
   inset: 0;
@@ -47,6 +45,7 @@
   border-bottom-right-radius: 24px;
 }
 
+/* Como este texto va sobre imagen fotográfica, se mantiene el #fff fijo para legibilidad */
 .comunidad-back {
   position: absolute;
   top: 48px;
@@ -75,7 +74,7 @@
 
 .comunidad-nombre {
   font-family: var(--hb-font-title);
-  color: #fff;
+  color: #fff; /* Se mantiene blanco por la foto */
   font-size: 28px;
   margin: 0 0 10px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.3);
@@ -142,7 +141,7 @@
 
 .comunidad-empty {
   text-align: center;
-  color: #aaa;
+  color: var(--hb-brown-mid); /* Cambiado */
   font-size: 14px;
   padding: 32px 20px;
   margin: 0;
@@ -156,7 +155,7 @@
 }
 
 .comunidad-post-card {
-  background: #fff;
+  background: var(--hb-bg-card); /* Cambiado */
   border-radius: 16px;
   padding: 14px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);

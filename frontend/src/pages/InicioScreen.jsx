@@ -5,8 +5,9 @@ import '../styles/perfil.css'
 import logo from '../assets/logo.png'
 import BottomNav from '../components/BottomNav'
 import { getImagenComunidad } from '../components/comunidadImagenes'
-
-const API_BASE = '/api'
+import { API_BASE, getAuthHeaders } from '../utils/api'
+import { getStoredToken } from '../utils/auth'
+import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
@@ -22,48 +23,188 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
+
+  // 1️⃣ INICIALIZAR desde localStorage (con clave por usuario) para que persista entre navegaciones
+  const [likesMap, setLikesMap] = useState(() => loadLikesCache())
+
   const overlayRef = useRef(null)
+  const comunidadesRef = useRef(null)
+  const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
 
+  // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    saveLikesCache(likesMap)
+  }, [likesMap])
 
-    fetch(`${API_BASE}/user/communities`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : [])
-      .then(async (comunidades) => {
-        const lista = Array.isArray(comunidades) ? comunidades : []
-        setMisComunidades(lista)
+  const cargarFeedComunidades = async () => {
+    const token = getStoredToken()
+    if (!token) {
+      setCargandoFeed(false)
+      return
+    }
 
-        if (lista.length === 0) {
-          setCargandoFeed(false)
-          return
+    try {
+      const response = await fetch(`${API_BASE}/user/communities`, {
+        headers: getAuthHeaders(token)
+      })
+
+      const comunidades = response.ok ? await response.json() : []
+      const lista = Array.isArray(comunidades) ? comunidades : []
+      setMisComunidades(lista)
+
+      if (lista.length === 0) {
+        setFeedPosts([])
+        setCargandoFeed(false)
+        return
+      }
+
+      const resultados = await Promise.allSettled(
+        lista.map(c =>
+          fetch(`${API_BASE}/community/${c.id}/posts`)
+            .then(r => r.ok ? r.json() : [])
+            .then(posts =>
+              (Array.isArray(posts) ? posts : []).map(p => ({
+                ...p,
+                community_name: c.name
+              }))
+            )
+        )
+      )
+
+      const todos = resultados
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      setFeedPosts(todos)
+      setCargandoFeed(false)
+
+      if (todos.length > 0) {
+        const cachéActual = loadLikesCache()
+        const sinCache = todos.filter(p => !(p.id in cachéActual))
+
+        if (sinCache.length > 0) {
+          const likeStates = await Promise.allSettled(
+            sinCache.map(p =>
+              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+                headers: getAuthHeaders(token)
+              })
+                .then(r => r.ok ? r.json() : { liked: false })
+                .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
+            )
+          )
+
+          const nuevos = {}
+          likeStates.forEach(r => {
+            if (r.status === 'fulfilled') {
+              nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
+            }
+          })
+
+          if (Object.keys(nuevos).length > 0) {
+            setLikesMap(prev => ({ ...prev, ...nuevos }))
+          }
         }
 
-        const resultados = await Promise.allSettled(
-          lista.map(c =>
-            fetch(`${API_BASE}/community/${c.id}/posts`)
-              .then(r => r.ok ? r.json() : [])
-              .then(posts =>
-                (Array.isArray(posts) ? posts : []).map(p => ({
-                  ...p,
-                  community_name: c.name
-                }))
-              )
+        const countUpdates = await Promise.allSettled(
+          todos.map(p =>
+            fetch(`${API_BASE}/posts/${p.id}/likes/count`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => data ? { id: p.id, count: data.count } : null)
           )
         )
 
-        const todos = resultados
-          .filter(r => r.status === 'fulfilled')
-          .flatMap(r => r.value)
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        const countMap = {}
+        countUpdates.forEach(r => {
+          if (r.status === 'fulfilled' && r.value) {
+            countMap[r.value.id] = r.value.count
+          }
+        })
 
-        setFeedPosts(todos)
-        setCargandoFeed(false)
-      })
-      .catch(() => setCargandoFeed(false))
+        if (Object.keys(countMap).length > 0) {
+          setLikesMap(prev => {
+            const actualizado = { ...prev }
+            Object.entries(countMap).forEach(([id, count]) => {
+              actualizado[id] = {
+                liked: actualizado[id]?.liked ?? false,
+                count
+              }
+            })
+            return actualizado
+          })
+        }
+      }
+    } catch {
+      setCargandoFeed(false)
+    }
+  }
+
+  const onMouseDown = (e) => {
+    const el = comunidadesRef.current
+    dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
+    el.style.cursor = 'grabbing'
+  }
+  const onMouseLeave = () => {
+    dragState.current.isDown = false
+    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
+  }
+  const onMouseUp = () => {
+    dragState.current.isDown = false
+    if (comunidadesRef.current) comunidadesRef.current.style.cursor = 'grab'
+  }
+  const onMouseMove = (e) => {
+    if (!dragState.current.isDown) return
+    e.preventDefault()
+    const el = comunidadesRef.current
+    const x = e.pageX - el.offsetLeft
+    const walk = (x - dragState.current.startX) * 1.2
+    el.scrollLeft = dragState.current.scrollLeft - walk
+  }
+
+  useEffect(() => {
+    cargarFeedComunidades()
   }, [])
+
+  const toggleLike = async (post, e) => {
+    e.stopPropagation()
+    const token = getStoredToken()
+    if (!token) return
+    const id = post.id
+    const yaLiked = likesMap[id]?.liked ?? false
+    const countActual = likesMap[id]?.count ?? post.likes_count ?? 0
+
+    // Optimistic update
+    setLikesMap(prev => ({
+      ...prev,
+      [id]: { liked: !yaLiked, count: yaLiked ? countActual - 1 : countActual + 1 }
+    }))
+
+    try {
+      const res = await fetch(`${API_BASE}/posts/${id}/like`, {
+        method: yaLiked ? 'DELETE' : 'POST',
+        headers: getAuthHeaders(token)
+      })
+
+      if (!res.ok) throw new Error('Like failed')
+
+      // Confirmar con el count real del servidor
+      const countRes = await fetch(`${API_BASE}/posts/${id}/likes/count`)
+      if (countRes.ok) {
+        const data = await countRes.json()
+        const countReal = typeof data.count === 'number' ? data.count : (yaLiked ? countActual - 1 : countActual + 1)
+        setLikesMap(prev => ({
+          ...prev,
+          [id]: { liked: !yaLiked, count: countReal }
+        }))
+      }
+    } catch {
+      // Revertir si falla
+      setLikesMap(prev => ({
+        ...prev,
+        [id]: { liked: yaLiked, count: countActual }
+      }))
+    }
+  }
 
   const abrirModal = async () => {
     setModalAbierto(true)
@@ -82,17 +223,18 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const cerrarModal = () => setModalAbierto(false)
 
   const unirseAComunidad = async (comunidadId) => {
-    const token = localStorage.getItem('token')
+    const token = getStoredToken()
     if (!token) return alert('Debes iniciar sesión')
     setUniendose(comunidadId)
     try {
       const r = await fetch(`${API_BASE}/communities/${comunidadId}/join`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders(token)
       })
       if (r.ok) {
         const nueva = todasComunidades.find(c => c.id === comunidadId)
         if (nueva) setMisComunidades(prev => [...prev, nueva])
+        await cargarFeedComunidades()
       }
     } catch (e) {
       console.error(e)
@@ -118,7 +260,14 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           <button className="inicio-add-btn" aria-label="Añadir comunidad" onClick={abrirModal}>＋</button>
         </h2>
 
-        <div className="inicio-comunidades">
+        <div
+          className="inicio-comunidades"
+          ref={comunidadesRef}
+          onMouseDown={onMouseDown}
+          onMouseLeave={onMouseLeave}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+        >
           {misComunidades.length === 0 ? (
             <p style={{ color: '#aaa', fontSize: '0.85rem', padding: '0 4px' }}>
               Aún no perteneces a ninguna. ¡Pulsa ＋ para unirte!
@@ -152,41 +301,54 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
           </p>
         ) : (
           <div className="perfil-galeria" style={{ paddingBottom: 0 }}>
-            {feedPosts.map(post => (
-              <div
-                key={`${post.id}-${post.community_name}`}
-                className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
-                onClick={() => setPostSeleccionado(post)}
-                style={{ cursor: 'pointer' }}
-              >
-                {post.media_url ? (
-                  <img
-                    src={parsearUrl(post.media_url)}
-                    alt="Post"
-                    onError={e => {
-                      e.target.style.display = 'none'
-                      e.target.nextSibling.style.display = 'flex'
-                    }}
-                  />
-                ) : null}
-                {post.media_url ? (
-                  <div style={{
-                    display: 'none', alignItems: 'center', justifyContent: 'center',
-                    padding: '20px 12px', background: 'var(--hb-green-lt)',
-                    color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
-                  }}>
-                    📷 No se ha podido cargar la foto
+            {feedPosts.map(post => {
+              const liked = likesMap[post.id]?.liked ?? false
+              const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0
+
+              return (
+                <div
+                  key={`${post.id}-${post.community_name}`}
+                  className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
+                  onClick={() => setPostSeleccionado(post)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {post.media_url ? (
+                    <img
+                      src={parsearUrl(post.media_url)}
+                      alt="Post"
+                      onError={e => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  {post.media_url ? (
+                    <div style={{
+                      display: 'none', alignItems: 'center', justifyContent: 'center',
+                      padding: '20px 12px', background: 'var(--hb-green-lt)',
+                      color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
+                    }}>
+                      📷 No se ha podido cargar la foto
+                    </div>
+                  ) : null}
+                  <div className="post-footer-mini">
+                    {post.username && (
+                      <span className="post-autor">@{post.username}</span>
+                    )}
+                    <p>{post.content}</p>
+                    <span className="post-meta">
+                      {formatearFecha(post.created_at)}
+                      <button
+                        className={`like-btn ${liked ? 'liked' : ''}`}
+                        onClick={e => toggleLike(post, e)}
+                      >
+                        {liked ? '♥' : '♡'} {likeCount}
+                      </button>
+                    </span>
                   </div>
-                ) : null}
-                <div className="post-footer-mini">
-                  <p>{post.content}</p>
-                  <span className="post-meta">
-                    {formatearFecha(post.created_at)}
-                    <span className="like-icon">♡ {post.likes_count || 0}</span>
-                  </span>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
@@ -233,8 +395,15 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
             ) : null}
             <div className="post-detail-footer">
               <div className="post-detail-likes">
-                <span className="heart-icon">♡</span>
-                <span className="like-count">{postSeleccionado.likes_count || 0}</span>
+                <button
+                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
+                  onClick={e => toggleLike(postSeleccionado, e)}
+                >
+                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
+                </button>
+                <span className="like-count">
+                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+                </span>
               </div>
               <div className="post-detail-caption">
                 <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}

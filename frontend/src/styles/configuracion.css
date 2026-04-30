@@ -15,7 +15,7 @@
 }
 
 .cfg-fila {
-  background: #d4cfc5;
+  background: var(--hb-green-lt); /* Cambiado para soportar modo oscuro */
   border-radius: 10px;
   padding: 14px 16px;
   display: flex;
@@ -26,10 +26,10 @@
 }
 
 .cfg-fila-eliminar {
-  background: #b94a42;
+  background: #b94a42; /* Dejamos este en fijo ya que es el color de alerta */
   border-radius: 10px;
   padding: 14px 16px;
-  color: white;
+  color: #fff;
   font-weight: 600;
   font-size: 15px;
   border: none;
@@ -42,7 +42,7 @@
   width: 48px;
   height: 26px;
   border-radius: 13px;
-  background: #bbb;
+  background: var(--hb-placeholder); /* Cambiado */
   cursor: pointer;
   position: relative;
   transition: background 0.2s;
@@ -56,7 +56,7 @@
   left: 2px;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--hb-bg-card); /* Cambiado */
   border-radius: 50%;
   transition: transform 0.2s;
   display: block;
@@ -69,7 +69,7 @@
 .cfg-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0,0,0,0.5); /* Oscurecido ligeramente */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,7 +90,7 @@
 
 .cfg-modal-titulo {
   background: var(--hb-green);
-  color: white;
+  color: #fff;
   border-radius: 12px;
   padding: 14px 16px;
   font-size: 18px;
@@ -124,5 +124,5 @@
   justify-content: center;
 }
 
-.cfg-eliminada-titulo { color: white; font-size: 22px; font-weight: 700; margin: 0; }
+.cfg-eliminada-titulo { color: #fff; font-size: 22px; font-weight: 700; margin: 0; }
 .cfg-eliminada-sub { color: rgba(255,255,255,0.8); font-size: 14px; margin: 0; }

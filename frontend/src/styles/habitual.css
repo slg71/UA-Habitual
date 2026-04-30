@@ -12,6 +12,10 @@
   --hb-green-lt:  #a8c8a4;
   --hb-text:      #3a2a1a;
   --hb-placeholder: #7ea87a;
+  
+  /* Variable específica para el fondo de las tarjetas y modales. 
+     Por defecto es blanco, pero cambiará en el modo oscuro. */
+  --hb-bg-card:   #ffffff; 
 
   --hb-radius-card:  18px;
   --hb-radius-btn:   50px;
@@ -119,8 +123,8 @@ h1, h2, h3, h4, h5, h6 {
 .hb-btn--primary  { background: var(--hb-green); color: #fff; }
 .hb-btn--primary:hover { background: var(--hb-green-dk); }
 
-.hb-btn--secondary { background: #c8dbc5; color: var(--hb-brown); }
-.hb-btn--secondary:hover { background: #b8ceb5; }
+.hb-btn--secondary { background: var(--hb-green-lt); color: var(--hb-brown); }
+.hb-btn--secondary:hover { opacity: 0.8; }
 
 /* ── Formulario ─────────────────────────────────────────── */
 .hb-form {
@@ -226,4 +230,57 @@ h1, h2, h3, h4, h5, h6 {
     border-inline: 1px solid rgba(74,44,26,0.1);
     min-height: 100svh;
   }
+}
+
+/* ════════════════════════════════════════════════════
+   MODO OSCURO Y ACCESIBILIDAD (GLOBAL)
+   ════════════════════════════════════════════════════ */
+
+/* LÓGICA DEL MODO OSCURO:
+   En lugar de crear un archivo CSS nuevo, cuando el usuario activa 
+   el interruptor en React, le añado la clase '.dark-mode' al <body> del HTML.
+   Al hacer esto, reescribo el valor de mis variables originales. 
+   Toda la app se vuelve oscura automáticamente porque usa estas variables.
+*/
+body.dark-mode {
+  --hb-bg:          #1a1a1a;
+  --hb-brown:       #e6d5c3; 
+  --hb-brown-mid:   #bda896;
+  --hb-text:        #f0f0f0; 
+  --hb-green-lt:    #2d3a2c; 
+  --hb-green:       #5d8559;
+  --hb-bg-card:     #242424; /* Las tarjetas blancas pasan a gris oscuro */
+}
+/* Aseguro que el contenedor principal de React adopte el nuevo fondo */
+body.dark-mode .hb-screen,
+body.dark-mode #root {
+  background: var(--hb-bg);
+}
+
+/* LÓGICA DEL TEXTO GRANDE:
+   Igual que el modo oscuro. Si el body tiene la clase '.texto-grande', 
+   fuerzo un aumento de tamaño en las etiquetas principales usando !important 
+   para sobrescribir los estilos de las otras pantallas sin romper su estructura.
+*/
+body.texto-grande p,
+body.texto-grande span,
+body.texto-grande label,
+body.texto-grande button,
+body.texto-grande input {
+  font-size: 18px !important;
+}
+
+body.texto-grande h1, 
+body.texto-grande .hb-title {
+  font-size: 48px !important;
+}
+
+body.texto-grande h2, 
+body.texto-grande h3,
+body.texto-grande .hb-subtitle {
+  font-size: 24px !important;
+}
+
+body.texto-grande .inicio-nav-item span:first-child {
+  font-size: 26px !important;
 }

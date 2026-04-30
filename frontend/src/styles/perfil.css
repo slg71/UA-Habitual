@@ -3,8 +3,8 @@
    ════════════════════════════════════════════════════ */
 
 .perfil-screen {
-  padding-top: 0; /* Quitamos padding top para la foto de portada */
-  padding-inline: 0; /* Para que la portada toque los bordes */
+  padding-top: 0; 
+  padding-inline: 0; 
   position: relative;
 }
 
@@ -48,7 +48,7 @@
   border-radius: 50%;
   border: 4px solid var(--hb-bg);
   object-fit: cover;
-  background: white;
+  background: var(--hb-bg-card); /* Cambiado */
 }
 
 .perfil-datos {
@@ -144,7 +144,7 @@
 
 .tab-btn.active {
   background: var(--hb-green-dk);
-  color: white;
+  color: #fff;
 }
 
 /* ── Galería (Masonry Simple) ── */
@@ -158,7 +158,7 @@
 .perfil-post {
   break-inside: avoid;
   margin-bottom: 12px;
-  background: white;
+  background: var(--hb-bg-card); /* Cambiado */
   border-radius: 16px;
   overflow: hidden;
   display: flex;
@@ -167,7 +167,7 @@
 
 .perfil-post--sin-img {
   min-height: 120px;
-  border: 1px solid #e7e2d8;
+  border: 1px solid var(--hb-green-lt); /* Cambiado */
 }
 
 .perfil-post img {
@@ -200,14 +200,14 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #888;
+  color: var(--hb-brown-mid); /* Cambiado */
 }
 
 /* ── Modal de Progreso ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,16 +270,14 @@
   padding-bottom: 8px;
 }
 
-/* Wrapper que hace de fondo conectable para la racha */
 .cal-dia-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 28px;
-  margin: 2px 0; /* Separación vertical entre semanas */
+  margin: 2px 0; 
 }
 
-/* El número en sí */
 .cal-dia-num {
   width: 24px;
   height: 24px;
@@ -287,18 +285,17 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  z-index: 1; /* Para que quede encima del fondo conectado */
+  z-index: 1; 
 }
 
 .cal-dia-num.hoy {
-  background: white;
+  background: var(--hb-bg-card); /* Cambiado */
   color: var(--hb-brown);
   border-radius: 50%;
   font-weight: bold;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-/* LÓGICA DE CONEXIÓN VISUAL DE LA RACHA */
 .racha-inicio, .racha-medio, .racha-fin, .racha-unico {
   background: var(--hb-brown); 
 }
@@ -307,31 +304,17 @@
 .racha-medio .cal-dia-num, 
 .racha-fin .cal-dia-num, 
 .racha-unico .cal-dia-num {
-  color: white; /* Texto blanco si el día está completado */
+  color: #fff; 
 }
 
-/* Si es hoy Y está en racha, mantenemos el texto marrón para que se lea en el círculo blanco */
 .cal-dia-wrapper[class*="racha-"] .cal-dia-num.hoy {
   color: var(--hb-brown);
 }
 
-.racha-inicio {
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
-}
-
-.racha-medio {
-  border-radius: 0;
-}
-
-.racha-fin {
-  border-top-right-radius: 14px;
-  border-bottom-right-radius: 14px;
-}
-
-.racha-unico {
-  border-radius: 14px;
-}
+.racha-inicio { border-top-left-radius: 14px; border-bottom-left-radius: 14px; }
+.racha-medio { border-radius: 0; }
+.racha-fin { border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
+.racha-unico { border-radius: 14px; }
 
 .objetivos-header {
   display: flex;
@@ -341,7 +324,7 @@
 }
 
 .objetivos-header h3 { margin: 0; font-size: 18px; color: var(--hb-brown); }
-.btn-add { background: var(--hb-green-dk); color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px;}
+.btn-add { background: var(--hb-green-dk); color: #fff; border: none; padding: 4px 12px; border-radius: 12px; font-size: 12px;}
 
 .objetivos-list { list-style: none; padding: 0; margin: 0; }
 .objetivos-list li {
@@ -351,18 +334,18 @@
   margin-bottom: 12px;
 }
 .objetivos-list p { margin: 0; font-size: 12px; font-weight: bold; color: var(--hb-text);}
-.objetivos-list small { font-size: 10px; color: #666; }
+.objetivos-list small { font-size: 10px; color: var(--hb-brown-mid); }
 
 /* ════════════════════════════════════════════════════
    Modal de Publicación Detallada (Pop-up)
    ════════════════════════════════════════════════════ */
 
 .post-overlay {
-  backdrop-filter: blur(2px); /* Un ligero difuminado del fondo */
+  backdrop-filter: blur(2px); 
 }
 
 .post-detail-card {
-  background: var(--hb-bg); /* Fondo clarito de la app */
+  background: var(--hb-bg); 
   border-radius: 20px;
   width: 100%;
   max-width: 380px;
@@ -372,9 +355,8 @@
   flex-direction: column;
 }
 
-/* Cabecera verde oscura de la publicación */
 .post-detail-header {
-  background: #6A8C5B; /* Un verde similar al de tu diseño */
+  background: var(--hb-green-dk); /* Cambiado */
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -386,19 +368,19 @@
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid white;
+  border: 1.5px solid var(--hb-bg-card); /* Cambiado */
 }
 
 .post-detail-username {
-  color: white;
+  color: #fff;
   font-weight: 600;
   font-size: 14px;
-  flex: 1; /* Empuja el botón hacia la derecha */
+  flex: 1; 
 }
 
 .post-detail-btn-seguir {
-  background: white;
-  color: #333;
+  background: var(--hb-bg-card); /* Cambiado */
+  color: var(--hb-text); /* Cambiado */
   border: none;
   padding: 4px 12px;
   border-radius: 20px;
@@ -407,7 +389,6 @@
   cursor: pointer;
 }
 
-/* Imagen de la publicación en el pop-up */
 .post-detail-img {
   width: 100%;
   max-height: 450px;
@@ -415,7 +396,6 @@
   display: block;
 }
 
-/* Zona inferior de comentarios y likes */
 .post-detail-footer {
   padding: 16px;
   display: flex;
@@ -432,14 +412,14 @@
 
 .heart-icon {
   font-size: 26px;
-  color: #666; /* Gris oscuro para el corazón vacío */
+  color: var(--hb-brown-mid); /* Cambiado */
   cursor: pointer;
   line-height: 1;
 }
 
 .like-count {
   font-size: 11px;
-  color: #555;
+  color: var(--hb-brown-mid); /* Cambiado */
   font-weight: bold;
   padding-left: 4px;
 }
@@ -458,16 +438,15 @@
 }
 
 .post-detail-comment {
-  color: #555; /* Texto del comentario un poco más gris */
+  color: var(--hb-text); /* Cambiado */
 }
 
 .post-detail-date {
   font-size: 11px;
-  color: #888;
+  color: var(--hb-brown-mid); /* Cambiado */
   margin-top: 8px;
 }
 
-/* Renombrar la clase del footer pequeño en el grid para que no choque */
 .post-footer-mini {
   padding: 10px;
   background: var(--hb-bg);
@@ -479,7 +458,6 @@
   color: var(--hb-text);
 }
 
-/* ── Formulario nuevo objetivo (dentro del modal) ── */
 .objetivo-form {
   display: flex;
   flex-direction: column;
@@ -520,7 +498,57 @@
 
 .objetivo-vacio {
   font-size: 13px;
-  color: #888;
+  color: var(--hb-brown-mid);
   padding: 8px 0;
   margin: 0;
+}
+
+.post-autor {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hb-green-dk);
+  margin-bottom: 3px;
+}
+
+.like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--hb-brown-mid); /* Cambiado */
+  padding: 0;
+  font-family: var(--hb-font-body);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: color 0.15s, transform 0.1s;
+}
+.like-btn:active { transform: scale(1.3); }
+.like-btn.liked { color: #e05c7a; } /* Este color fijo está bien, resalta el "like" */
+
+/* ── Acciones de Perfil (Botón y Ajustes) ── */
+.perfil-acciones {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Espacio limpio entre el botón y el engranaje */
+}
+
+.perfil-settings {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--hb-text);
+  opacity: 0.7;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.perfil-settings:hover {
+  opacity: 1;
+  transform: scale(1.1); /* Un pequeño efecto visual al pasar el ratón */
 }
