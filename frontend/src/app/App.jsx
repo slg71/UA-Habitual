@@ -8,7 +8,7 @@ import PerfilScreen from '../pages/PerfilScreen'
 import ConfiguracionScreen from '../pages/ConfiguracionScreen'
 import CrearScreen from '../pages/CrearScreen'
 import ComunidadScreen from '../pages/ComunidadScreen'
-import { clearStoredToken, getStoredToken } from '../utils/auth'
+import { clearStoredToken, getStoredToken, loadUserSettings } from '../utils/auth'
 
 const SCREEN_STORAGE_KEY = 'habitual_last_screen_v1'
 const COMMUNITY_STORAGE_KEY = 'habitual_last_community_v1'
@@ -34,6 +34,7 @@ function getInitialScreen() {
 export default function App() {
   const [screen, setScreen] = useState(() => getInitialScreen())
   const [perfilVisitadoId, setPerfilVisitadoId] = useState(() => localStorage.getItem(PROFILE_STORAGE_KEY) || null)
+  const [refreshPerfilKey, setRefreshPerfilKey] = useState(0)
   const [comunidadActual, setComunidadActual] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(COMMUNITY_STORAGE_KEY) || 'null')
@@ -41,6 +42,15 @@ export default function App() {
       return null
     }
   })
+
+  useEffect(() => {
+    const settings = loadUserSettings()
+    if (!settings) return
+
+    document.body.classList.toggle('dark-mode', !!settings.modoOscuro)
+    document.body.classList.toggle('texto-grande', !!settings.textoGrande)
+    document.body.classList.toggle('alto-contraste', !!settings.altoContraste)
+  }, [screen])
 
   useEffect(() => {
     if (screen === 'comunidad') {
@@ -62,6 +72,7 @@ export default function App() {
     localStorage.removeItem(SCREEN_STORAGE_KEY)
     localStorage.removeItem(COMMUNITY_STORAGE_KEY)
     localStorage.removeItem(PROFILE_STORAGE_KEY)
+    document.body.classList.remove('dark-mode', 'texto-grande', 'alto-contraste')
     setComunidadActual(null)
     setPerfilVisitadoId(null)
     setScreen('welcome')
@@ -75,6 +86,7 @@ export default function App() {
     } else {
       localStorage.removeItem(PROFILE_STORAGE_KEY)
     }
+    setRefreshPerfilKey(prev => prev + 1)
     setScreen('perfil')
   }
 
@@ -123,10 +135,12 @@ export default function App() {
           onConfiguracion={() => setScreen('configuracion')}
           onCrear={() => setScreen('crear')}
           onComunidad={irAComunidad}
+          onVerPerfil={abrirPerfilUsuario}
         />
       )}
       {screen === 'perfil' && (
         <PerfilScreen
+          key={refreshPerfilKey}
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => abrirPerfilUsuario(null)}
