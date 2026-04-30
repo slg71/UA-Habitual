@@ -55,68 +55,79 @@ const getPublicProfile = (req, res) => {
 
 const updateProfile = (req, res) => {
     const userId = req.user.id;
-    const { email, password } = req.body || {};
+    const { username, email, password } = req.body || {};
 
-    if (!email && !password) {
+    if (!username && !email && !password) {
         return res.status(400).json({
-            error: 'Envía al menos email o password'
+            error: 'Envía al menos username, email o password'
         });
     }
 
-    if (email) {
-        // Verificar que el email no esté en uso
-        const checkQuery = 'SELECT id FROM users WHERE email = ? AND id != ?';
-        db.execute(checkQuery, [email, userId], (err, rows) => {
-            if (err || rows.length > 0) {
-                return res.status(400).json({ error: 'El email ya está en uso' });
+    const updateUser = () => {
+        const fields = [];
+        const params = [];
+
+        if (username) {
+            fields.push('username = ?');
+            params.push(username);
+        }
+        if (email) {
+            fields.push('email = ?');
+            params.push(email);
+        }
+
+        const executeUpdate = (hashedPassword) => {
+            if (hashedPassword) {
+                fields.push('password_hash = ?');
+                params.push(hashedPassword);
             }
 
-            let query = 'UPDATE users SET email = ?';
-            const params = [email];
+            const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+            params.push(userId);
 
-            if (password) {
-                // Hash del nuevo password
-                bcrypt.hash(password, 10, (err, hashedPassword) => {
-                    if (err) {
-                        return res.status(500).json({ error: 'Error al procesar password' });
-                    }
-                    query += ', password_hash = ?';
-                    params.push(hashedPassword);
-                    params.push(userId);
-                    query += ' WHERE id = ?';
-
-                    db.execute(query, params, (err) => {
-                        if (err) {
-                            return res.status(500).json({ error: 'Error al actualizar perfil' });
-                        }
-                        return res.json({ message: 'Perfil actualizado' });
-                    });
-                });
-            } else {
-                params.push(userId);
-                query += ' WHERE id = ?';
-                db.execute(query, params, (err) => {
-                    if (err) {
-                        return res.status(500).json({ error: 'Error al actualizar perfil' });
-                    }
-                    return res.json({ message: 'Perfil actualizado' });
-                });
-            }
-        });
-    } else if (password) {
-        bcrypt.hash(password, 10, (err, hashedPassword) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error al procesar password' });
-            }
-            const query = 'UPDATE users SET password_hash = ? WHERE id = ?';
-            db.execute(query, [hashedPassword, userId], (err) => {
+            db.execute(query, params, (err) => {
                 if (err) {
                     return res.status(500).json({ error: 'Error al actualizar perfil' });
                 }
                 return res.json({ message: 'Perfil actualizado' });
             });
+        };
+
+        if (password) {
+            bcrypt.hash(password, 10, (err, hashedPassword) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error al procesar password' });
+                }
+                executeUpdate(hashedPassword);
+            });
+        } else {
+            executeUpdate();
+        }
+    };
+
+    const checkEmail = (done) => {
+        if (!email) return done();
+
+        const checkQuery = 'SELECT id FROM users WHERE email = ? AND id != ?';
+        db.execute(checkQuery, [email, userId], (err, rows) => {
+            if (err) return res.status(500).json({ error: 'Error al verificar email' });
+            if (rows.length > 0) return res.status(400).json({ error: 'El email ya está en uso' });
+            done();
         });
-    }
+    };
+
+    const checkUsername = (done) => {
+        if (!username) return done();
+
+        const checkQuery = 'SELECT id FROM users WHERE username = ? AND id != ?';
+        db.execute(checkQuery, [username, userId], (err, rows) => {
+            if (err) return res.status(500).json({ error: 'Error al verificar nombre de usuario' });
+            if (rows.length > 0) return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+            done();
+        });
+    };
+
+    checkUsername(() => checkEmail(updateUser));
 };
 
 const getLeaderboard = (req, res) => {

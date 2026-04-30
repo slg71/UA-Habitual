@@ -284,3 +284,33 @@ body.texto-grande .hb-subtitle {
 body.texto-grande .inicio-nav-item span:first-child {
   font-size: 26px !important;
 }
+
+/* LÓGICA DEL ALTO CONTRASTE:
+   Modo de alto contraste que mantiene la paleta de colores de la app pero aumenta el contraste
+   para mejor accesibilidad, sin ser tan drástico como negro puro/blanco puro.
+*/
+body.alto-contraste {
+  --hb-bg:          #b8a898; /* Beige aún más oscuro para mayor contraste */
+  --hb-brown:       #1a0f0a; /* Marrón muy oscuro */
+  --hb-brown-mid:   #3a2012; /* Marrón medio más intenso */
+  --hb-text:        #0a0503; /* Texto casi negro para máximo contraste */
+  --hb-green:       #2a8a2a; /* Verde más saturado */
+  --hb-green-dk:    #1a6a1a; /* Verde oscuro más intenso */
+  --hb-green-lt:    #d8e8d8; /* Verde claro más visible */
+  --hb-bg-card:     #faf4ec; /* Fondo de tarjetas más claro para contraste */
+  --hb-placeholder: #2a8a2a; /* Placeholder en verde para contraste */
+}
+/* Aseguro que el contenedor principal adopte el nuevo fondo */
+body.alto-contraste .hb-screen,
+body.alto-contraste #root {
+  background: var(--hb-bg);
+}
+/* Mejorar el contraste de los botones sin bordes */
+body.alto-contraste .hb-btn--primary {
+  background: var(--hb-green) !important;
+  color: #ffffff !important;
+}
+body.alto-contraste .hb-btn--secondary {
+  background: var(--hb-bg-card) !important;
+  color: var(--hb-text) !important;
+}
