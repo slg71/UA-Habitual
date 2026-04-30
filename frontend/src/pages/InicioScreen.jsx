@@ -59,6 +59,109 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
     guardarCacheLikes(likesMap)
   }, [likesMap])
 
+  const cargarFeedComunidades = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setCargandoFeed(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/user/communities`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      const comunidades = response.ok ? await response.json() : []
+      const lista = Array.isArray(comunidades) ? comunidades : []
+      setMisComunidades(lista)
+
+      if (lista.length === 0) {
+        setFeedPosts([])
+        setCargandoFeed(false)
+        return
+      }
+
+      const resultados = await Promise.allSettled(
+        lista.map(c =>
+          fetch(`${API_BASE}/community/${c.id}/posts`)
+            .then(r => r.ok ? r.json() : [])
+            .then(posts =>
+              (Array.isArray(posts) ? posts : []).map(p => ({
+                ...p,
+                community_name: c.name
+              }))
+            )
+        )
+      )
+
+      const todos = resultados
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      setFeedPosts(todos)
+      setCargandoFeed(false)
+
+      if (todos.length > 0) {
+        const cachéActual = leerCacheLikes()
+        const sinCache = todos.filter(p => !(p.id in cachéActual))
+
+        if (sinCache.length > 0) {
+          const likeStates = await Promise.allSettled(
+            sinCache.map(p =>
+              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+                .then(r => r.ok ? r.json() : { liked: false })
+                .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
+            )
+          )
+
+          const nuevos = {}
+          likeStates.forEach(r => {
+            if (r.status === 'fulfilled') {
+              nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
+            }
+          })
+
+          if (Object.keys(nuevos).length > 0) {
+            setLikesMap(prev => ({ ...prev, ...nuevos }))
+          }
+        }
+
+        const countUpdates = await Promise.allSettled(
+          todos.map(p =>
+            fetch(`${API_BASE}/posts/${p.id}/likes/count`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => data ? { id: p.id, count: data.count } : null)
+          )
+        )
+
+        const countMap = {}
+        countUpdates.forEach(r => {
+          if (r.status === 'fulfilled' && r.value) {
+            countMap[r.value.id] = r.value.count
+          }
+        })
+
+        if (Object.keys(countMap).length > 0) {
+          setLikesMap(prev => {
+            const actualizado = { ...prev }
+            Object.entries(countMap).forEach(([id, count]) => {
+              actualizado[id] = {
+                liked: actualizado[id]?.liked ?? false,
+                count
+              }
+            })
+            return actualizado
+          })
+        }
+      }
+    } catch {
+      setCargandoFeed(false)
+    }
+  }
+
   const onMouseDown = (e) => {
     const el = comunidadesRef.current
     dragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
@@ -82,107 +185,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   }
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    fetch(`${API_BASE}/user/communities`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : [])
-      .then(async (comunidades) => {
-        const lista = Array.isArray(comunidades) ? comunidades : []
-        setMisComunidades(lista)
-
-        if (lista.length === 0) {
-          setCargandoFeed(false)
-          return
-        }
-
-        const resultados = await Promise.allSettled(
-          lista.map(c =>
-            fetch(`${API_BASE}/community/${c.id}/posts`)
-              .then(r => r.ok ? r.json() : [])
-              .then(posts =>
-                (Array.isArray(posts) ? posts : []).map(p => ({
-                  ...p,
-                  community_name: c.name
-                }))
-              )
-          )
-        )
-
-        const todos = resultados
-          .filter(r => r.status === 'fulfilled')
-          .flatMap(r => r.value)
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-        setFeedPosts(todos)
-        // 3️⃣ Los posts se muestran YA con el estado cacheado del localStorage
-        setCargandoFeed(false)
-
-        // 4️⃣ Sincronización en segundo plano: solo pedimos los posts
-        // que NO están en caché, o todos si quieres frescura total.
-        // Aquí pedimos solo los que no están cacheados para ser eficientes.
-        if (todos.length > 0) {
-          const cachéActual = leerCacheLikes()
-          const sinCache = todos.filter(p => !(p.id in cachéActual))
-
-          // Solo consultamos el servidor para posts sin caché
-          if (sinCache.length > 0) {
-            const likeStates = await Promise.allSettled(
-              sinCache.map(p =>
-                fetch(`${API_BASE}/posts/${p.id}/user-like`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                })
-                  .then(r => r.ok ? r.json() : { liked: false })
-                  .then(data => ({ id: p.id, liked: !!data.liked, count: p.likes_count || 0 }))
-              )
-            )
-
-            const nuevos = {}
-            likeStates.forEach(r => {
-              if (r.status === 'fulfilled') {
-                nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
-              }
-            })
-
-            if (Object.keys(nuevos).length > 0) {
-              setLikesMap(prev => ({ ...prev, ...nuevos }))
-            }
-          }
-
-          // 5️⃣ Actualizar contadores reales del servidor para TODOS los posts
-          // (el liked ya viene del caché, pero el count puede haber cambiado)
-          const countUpdates = await Promise.allSettled(
-            todos.map(p =>
-              fetch(`${API_BASE}/posts/${p.id}/likes/count`)
-                .then(r => r.ok ? r.json() : null)
-                .then(data => data ? { id: p.id, count: data.count } : null)
-            )
-          )
-
-          const countMap = {}
-          countUpdates.forEach(r => {
-            if (r.status === 'fulfilled' && r.value) {
-              countMap[r.value.id] = r.value.count
-            }
-          })
-
-          if (Object.keys(countMap).length > 0) {
-            setLikesMap(prev => {
-              const actualizado = { ...prev }
-              Object.entries(countMap).forEach(([id, count]) => {
-                actualizado[id] = {
-                  liked: actualizado[id]?.liked ?? false,
-                  count
-                }
-              })
-              return actualizado
-            })
-          }
-        }
-      })
-      .catch(() => setCargandoFeed(false))
+    cargarFeedComunidades()
   }, [])
 
   const toggleLike = async (post, e) => {
@@ -254,6 +257,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
       if (r.ok) {
         const nueva = todasComunidades.find(c => c.id === comunidadId)
         if (nueva) setMisComunidades(prev => [...prev, nueva])
+        await cargarFeedComunidades()
       }
     } catch (e) {
       console.error(e)

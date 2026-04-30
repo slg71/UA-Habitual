@@ -64,73 +64,85 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
     guardarCacheLikes(likesMap)
   }, [likesMap])
 
-  useEffect(() => {
+  const cargarContenidoComunidad = async () => {
     if (!comunidad?.id) return
 
-    fetch(`${API_BASE}/communities/${comunidad.id}/members`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setNumMiembros(Array.isArray(data) ? data.length : 0))
-      .catch(() => setNumMiembros(0))
+    setCargandoPosts(true)
 
-    fetch(`${API_BASE}/community/${comunidad.id}/posts`)
-      .then(r => r.ok ? r.json() : [])
-      .then(async (data) => {
-        const lista = Array.isArray(data) ? data : []
-        setPosts(lista)
-        // 3️⃣ Posts se muestran con caché inmediatamente
-        setCargandoPosts(false)
+    try {
+      const [resMiembros, resPosts] = await Promise.all([
+        fetch(`${API_BASE}/communities/${comunidad.id}/members`),
+        fetch(`${API_BASE}/community/${comunidad.id}/posts`)
+      ])
 
-        const token = localStorage.getItem('token')
-        if (!token || !lista.length) return
+      const dataMiembros = resMiembros.ok ? await resMiembros.json() : []
+      setNumMiembros(Array.isArray(dataMiembros) ? dataMiembros.length : 0)
 
-        // 4️⃣ Solo consultamos los posts sin caché
-        const cacheActual = leerCacheLikes()
-        const sinCache = lista.filter(p => !(p.id in cacheActual))
+      const dataPosts = resPosts.ok ? await resPosts.json() : []
+      const lista = Array.isArray(dataPosts) ? dataPosts : []
+      setPosts(lista)
+      // 3️⃣ Posts se muestran con caché inmediatamente
+      setCargandoPosts(false)
 
-        if (sinCache.length > 0) {
-          const results = await Promise.allSettled(
-            sinCache.map(p =>
-              fetch(`${API_BASE}/posts/${p.id}/user-like`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-                .then(r => r.ok ? r.json() : { liked: false })
-                .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count || 0 }))
-            )
-          )
-          const nuevos = {}
-          results.forEach(r => {
-            if (r.status === 'fulfilled') {
-              nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
-            }
-          })
-          if (Object.keys(nuevos).length > 0) {
-            setLikesMap(prev => ({ ...prev, ...nuevos }))
-          }
-        }
+      const token = localStorage.getItem('token')
+      if (!token || !lista.length) return
 
-        // 5️⃣ Actualizar conteos reales en segundo plano
-        const countUpdates = await Promise.allSettled(
-          lista.map(p =>
-            fetch(`${API_BASE}/posts/${p.id}/likes/count`)
-              .then(r => r.ok ? r.json() : null)
-              .then(d => d ? { id: p.id, count: d.count } : null)
+      // 4️⃣ Solo consultamos los posts sin caché
+      const cacheActual = leerCacheLikes()
+      const sinCache = lista.filter(p => !(p.id in cacheActual))
+
+      if (sinCache.length > 0) {
+        const results = await Promise.allSettled(
+          sinCache.map(p =>
+            fetch(`${API_BASE}/posts/${p.id}/user-like`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then(r => r.ok ? r.json() : { liked: false })
+              .then(d => ({ id: p.id, liked: !!d.liked, count: p.likes_count || 0 }))
           )
         )
-        const countMap = {}
-        countUpdates.forEach(r => {
-          if (r.status === 'fulfilled' && r.value) countMap[r.value.id] = r.value.count
+        const nuevos = {}
+        results.forEach(r => {
+          if (r.status === 'fulfilled') {
+            nuevos[r.value.id] = { liked: r.value.liked, count: r.value.count }
+          }
         })
-        if (Object.keys(countMap).length > 0) {
-          setLikesMap(prev => {
-            const actualizado = { ...prev }
-            Object.entries(countMap).forEach(([id, count]) => {
-              actualizado[id] = { liked: actualizado[id]?.liked ?? false, count }
-            })
-            return actualizado
-          })
+        if (Object.keys(nuevos).length > 0) {
+          setLikesMap(prev => ({ ...prev, ...nuevos }))
         }
+      }
+
+      // 5️⃣ Actualizar conteos reales en segundo plano
+      const countUpdates = await Promise.allSettled(
+        lista.map(p =>
+          fetch(`${API_BASE}/posts/${p.id}/likes/count`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => d ? { id: p.id, count: d.count } : null)
+        )
+      )
+      const countMap = {}
+      countUpdates.forEach(r => {
+        if (r.status === 'fulfilled' && r.value) countMap[r.value.id] = r.value.count
       })
-      .catch(() => { setPosts([]); setCargandoPosts(false) })
+      if (Object.keys(countMap).length > 0) {
+        setLikesMap(prev => {
+          const actualizado = { ...prev }
+          Object.entries(countMap).forEach(([id, count]) => {
+            actualizado[id] = { liked: actualizado[id]?.liked ?? false, count }
+          })
+          return actualizado
+        })
+      }
+    } catch {
+      setPosts([])
+      setNumMiembros(0)
+    } finally {
+      setCargandoPosts(false)
+    }
+  }
+
+  useEffect(() => {
+    cargarContenidoComunidad()
   }, [comunidad?.id])
 
   const toggleLike = async (post, e) => {
@@ -175,12 +187,14 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
       setMiembro(false)
       setNumMiembros(n => Math.max(0, n - 1))
     } else {
-      await fetch(`${API_BASE}/communities/${comunidad.id}/join`, {
+      const response = await fetch(`${API_BASE}/communities/${comunidad.id}/join`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (!response.ok) return
       setMiembro(true)
       setNumMiembros(n => n + 1)
+      await cargarContenidoComunidad()
     }
   }
 
