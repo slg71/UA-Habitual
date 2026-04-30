@@ -8,7 +8,7 @@ import PerfilScreen from '../pages/PerfilScreen'
 import ConfiguracionScreen from '../pages/ConfiguracionScreen'
 import CrearScreen from '../pages/CrearScreen'
 import ComunidadScreen from '../pages/ComunidadScreen'
-import { clearStoredToken, getStoredToken } from '../utils/auth'
+import { clearStoredToken, getStoredToken, loadUserSettings } from '../utils/auth'
 
 const SCREEN_STORAGE_KEY = 'habitual_last_screen_v1'
 const COMMUNITY_STORAGE_KEY = 'habitual_last_community_v1'
@@ -42,6 +42,15 @@ export default function App() {
       return null
     }
   })
+
+  useEffect(() => {
+    const settings = loadUserSettings()
+    if (!settings) return
+
+    document.body.classList.toggle('dark-mode', !!settings.modoOscuro)
+    document.body.classList.toggle('texto-grande', !!settings.textoGrande)
+    document.body.classList.toggle('alto-contraste', !!settings.altoContraste)
+  }, [screen])
 
   useEffect(() => {
     if (screen === 'comunidad') {

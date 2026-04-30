@@ -14,6 +14,35 @@ export const getStoredToken = () => {
   return token
 }
 
+export const SETTINGS_STORAGE_KEY = 'habitual_user_settings_v1'
+
+export const getSettingsStorageKey = (token = getStoredToken()) => {
+  const userId = getUserIdFromToken(token)
+  return userId ? `${SETTINGS_STORAGE_KEY}_${userId}` : SETTINGS_STORAGE_KEY
+}
+
+export const loadUserSettings = (token = getStoredToken()) => {
+  const raw = localStorage.getItem(getSettingsStorageKey(token))
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+export const saveUserSettings = (settings, token = getStoredToken()) => {
+  const key = getSettingsStorageKey(token)
+  if (!key) return
+  localStorage.setItem(key, JSON.stringify(settings))
+}
+
+export const clearUserSettings = (token = getStoredToken()) => {
+  const key = getSettingsStorageKey(token)
+  if (!key) return
+  localStorage.removeItem(key)
+}
+
 export const setStoredToken = (token) => {
   localStorage.setItem(TOKEN_STORAGE_KEY, token)
 }
