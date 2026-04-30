@@ -6,6 +6,7 @@ import BottomNav from '../components/BottomNav';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
+import imagenUsuario from '../assets/imagen-usuario.png';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -381,7 +382,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         </div>
         <div className="perfil-info">
           <div className="perfil-avatar-container">
-            <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200" alt="Avatar" className="perfil-avatar" />
+            <img src={imagenUsuario} alt="Avatar" className="perfil-avatar" />
           </div>
           <div className="perfil-datos">
             <div className="perfil-nombres">
@@ -479,7 +480,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
           <div className="post-detail-card" onClick={e => e.stopPropagation()}>
             <div className="post-detail-header">
-              <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100" alt="Avatar" className="post-detail-avatar" />
+              <img src={imagenUsuario} alt="Avatar" className="post-detail-avatar" />
               {postSeleccionado.user_id && String(postSeleccionado.user_id) !== String(user?.id) ? (
                 <button
                   type="button"
