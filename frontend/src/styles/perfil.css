@@ -40,6 +40,7 @@
   gap: 16px;
   position: relative;
   z-index: 2;
+  padding-top: 12px; /* ← esto baja el nombre y el botón */
 }
 
 .perfil-avatar {

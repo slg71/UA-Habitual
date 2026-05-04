@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
-import logo from '../assets/logo.png'
+import logoLight from '../assets/logo.png'
+import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
 import CommentsSection from '../components/CommentsSection'
 import { API_BASE, getAuthHeaders } from '../utils/api'
@@ -20,9 +21,19 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
   const [busqueda, setBusqueda] = useState('')
   const [postSeleccionado, setPostSeleccionado] = useState(null)
   const [commentCount, setCommentCount] = useState(0)
+  const [modoOscuro, setModoOscuro] = useState(document.body.classList.contains('dark-mode'))
 
   // ── Likes persistentes (mismo patrón que InicioScreen y PerfilScreen) ──
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
+
+  // Detectar cambios en modo oscuro
+  useEffect(() => {
+    const observador = new MutationObserver(() => {
+      setModoOscuro(document.body.classList.contains('dark-mode'))
+    })
+    observador.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observador.disconnect()
+  }, [])
 
   useEffect(() => {
     saveLikesCache(likesMap)
@@ -175,8 +186,7 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
     <div className="hb-screen inicio-screen">
 
       <div className="inicio-header">
-        <img src={logo} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
-        <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+        <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
       </div>
 
       <div className="explorar-search-wrapper">

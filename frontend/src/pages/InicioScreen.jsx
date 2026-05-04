@@ -302,7 +302,6 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
       <div className="inicio-header">
         <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
-        <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
       {/* Comunidades */}

@@ -325,7 +325,6 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
 
       {/* ── Cabecera ── */}
       <div className="inicio-header">
-        <button className="hb-back cfg-back" onClick={onBack}>← Volver</button>
         <h1 className="hb-title cfg-titulo">Configuración</h1>
       </div>
 

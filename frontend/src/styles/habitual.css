@@ -184,6 +184,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 .hb-back:hover { opacity: 1; }
 
+/* ── Config Icon ────────────────────────────────────────── */
+.config-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 /* ── Nav inferior (compartido por todas las pantallas) ──── */
 .inicio-nav {
   position: fixed;
@@ -473,6 +480,48 @@ body.texto-grande .perfil-galeria {
   margin-top: 8px;
 }
 
+.post-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 1px solid var(--hb-border);
+  padding-top: 12px;
+}
+
+.btn-delete {
+  padding: 10px 16px;
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #ff5252;
+  transform: scale(1.02);
+}
+
+.btn-delete:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-error {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+}
+
 /* ── Galería de Posts en Columnas ── */
 .perfil-galeria {
   columns: 2;
@@ -494,7 +543,7 @@ body.texto-grande .perfil-galeria {
 }
 
 .perfil-post--sin-img {
-  min-height: 120px;
+  min-height: 0px;
 }
 
 .perfil-post img {
