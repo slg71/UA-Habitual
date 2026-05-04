@@ -2,20 +2,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
-import '../styles/perfil.css'
 import logo from '../assets/logo.png'
 import BottomNav from '../components/BottomNav'
+import CommentsSection from '../components/CommentsSection'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
+const formatearFecha = iso =>
+  iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
+
 export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear, onVerPerfil, onConfiguracion }) {
   const [posts, setPosts] = useState([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [postSeleccionado, setPostSeleccionado] = useState(null)
+  const [commentCount, setCommentCount] = useState(0)
 
   // ── Likes persistentes (mismo patrón que InicioScreen y PerfilScreen) ──
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
@@ -320,7 +324,16 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
                   <strong>Comunidad:</strong> {postSeleccionado.community_name}
                 </div>
               )}
+              <div className="post-detail-comment">
+                <strong>Comentarios:</strong> {commentCount}
+              </div>
+              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}

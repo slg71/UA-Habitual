@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import '../styles/habitual.css';
-import '../styles/inicio.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
 import CommentsSection from '../components/CommentsSection';

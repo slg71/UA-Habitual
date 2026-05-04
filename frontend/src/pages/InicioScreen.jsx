@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
-import '../styles/perfil.css'
 import logoLight from '../assets/logo.png'
 import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'

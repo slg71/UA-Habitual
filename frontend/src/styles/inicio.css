@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════
-   inicio.css  –  InicioScreen y ExplorarScreen
+   inicio.css  –  Estilos ESPECÍFICOS para InicioScreen y ExplorarScreen
    ════════════════════════════════════════════════════ */
 
 .inicio-screen {
@@ -194,19 +194,6 @@
 .hb-photo:nth-child(12) { grid-column: 7/10; grid-row: 7/9; }
 
 /* ── Modal comunidades ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 100;
-  animation: fadeIn 0.18s ease;
-}
-
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-
 .modal-comunidades {
   background: var(--hb-bg);
   border-radius: 20px 20px 0 0;
