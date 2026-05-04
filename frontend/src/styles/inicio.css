@@ -338,3 +338,72 @@
   color: var(--hb-green-lt);
   cursor: default;
 }
+
+/* Cuadrícula de 3 columnas sin espacios (gap: 1px o 0) */
+.explorar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px; /* Espacio mínimo entre fotos */
+  padding: 5px;
+}
+
+/* Contenedor cuadrado para cada post */
+.explorar-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Mantiene el formato cuadrado 1x1 */
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.explorar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Recorta la imagen para que rellene el cuadrado */
+}
+
+.explorar-img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #e0eadd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* Superposición de texto y likes */
+.explorar-info-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  color: white;
+  pointer-events: none; /* Para que el click pase al padre */
+}
+
+.explorar-user {
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.explorar-stats {
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  pointer-events: auto; /* Permite dar like pinchando en el número */
+}
+
+/* Ajuste buscador */
+.explorar-search-input::placeholder {
+  color: #f0f0f0;
+}
