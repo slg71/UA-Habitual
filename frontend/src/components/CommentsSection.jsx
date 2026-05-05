@@ -92,7 +92,7 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
   return (
     <div className="comments-section">
       <div className="comments-header">
-        <h4>Comentarios ({comments.length})</h4>
+        <h4>Comentarios</h4>
       </div>
 
       {comments.length === 0 ? (

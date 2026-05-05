@@ -571,7 +571,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
                     onClick={borrarPost}
                     disabled={isDeletingPost}
                   >
-                    {isDeletingPost ? 'Eliminando...' : '🗑️ Eliminar post'}
+                    {isDeletingPost ? 'Eliminando...' : 'Eliminar post'}
                   </button>
                 </div>
               )}
