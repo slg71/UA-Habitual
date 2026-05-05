@@ -219,7 +219,15 @@ h1, h2, h3, h4, h5, h6 {
   gap: 3px;
   cursor: pointer;
   padding: 0 8px;
-  transition: color 0.2s;
+  transition: color 0.2s, filter 0.2s;
+}
+.nav-icon { 
+  width: 20px; 
+  height: 20px; 
+  object-fit: contain;
+  transition: filter 0.2s;
+}
+.inicio-nav-item--active .nav-icon {
 }
 .inicio-nav-item span:first-child { font-size: 20px; }
 .inicio-nav-item--active {
@@ -287,6 +295,11 @@ body.texto-grande h2,
 body.texto-grande h3,
 body.texto-grande .hb-subtitle {
   font-size: 24px !important;
+}
+
+body.texto-grande .nav-icon {
+  width: 26px !important;
+  height: 26px !important;
 }
 
 body.texto-grande .inicio-nav-item span:first-child {
