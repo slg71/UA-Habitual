@@ -26,64 +26,41 @@ const createPost = (req, res) => {
             return res.status(403).json({ error: 'No estás unido a esta comunidad' });
         }
 
-        db.beginTransaction((txErr) => {
-            if (txErr) {
+        const insertPostQuery = 'INSERT INTO posts (user_id, community_id, content) VALUES (?, ?, ?)';
+        db.execute(insertPostQuery, [userId, community_id, content], (err, result) => {
+            if (err) {
                 return res.status(500).json({ error: 'Error al crear post' });
             }
 
-            const insertPostQuery = 'INSERT INTO posts (user_id, community_id, content) VALUES (?, ?, ?)';
-            db.execute(insertPostQuery, [userId, community_id, content], (err, result) => {
-                if (err) {
-                    return db.rollback(() => {
-                        return res.status(500).json({ error: 'Error al crear post' });
-                    });
+            const postId = result.insertId;
+
+            // Si no hay media, responder directamente
+            if (!mediaUrl) {
+                return res.status(201).json({
+                    message: 'Post creado con éxito',
+                    postId: postId,
+                    media_url: null
+                });
+            }
+
+            // Insertar media si existe
+            const insertMediaQuery = 'INSERT INTO media (type, url, metadata) VALUES (?, ?, ?)';
+            db.execute(insertMediaQuery, [mediaType, mediaUrl, mediaMetadata], (mediaErr, mediaResult) => {
+                if (mediaErr) {
+                    return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
                 }
 
-                if (!mediaUrl) {
-                    return db.commit((commitErr) => {
-                        if (commitErr) {
-                            return db.rollback(() => {
-                                return res.status(500).json({ error: 'Error al crear post' });
-                            });
-                        }
-
-                        return res.status(201).json({
-                            message: 'Post creado con éxito',
-                            postId: result.insertId,
-                            media_url: null
-                        });
-                    });
-                }
-
-                const insertMediaQuery = 'INSERT INTO media (type, url, metadata) VALUES (?, ?, ?)';
-                db.execute(insertMediaQuery, [mediaType, mediaUrl, mediaMetadata], (mediaErr, mediaResult) => {
-                    if (mediaErr) {
-                        return db.rollback(() => {
-                            return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
-                        });
+                // Vincular media al post
+                const linkMediaQuery = 'INSERT INTO post_media (post_id, media_id) VALUES (?, ?)';
+                db.execute(linkMediaQuery, [postId, mediaResult.insertId], (linkErr) => {
+                    if (linkErr) {
+                        return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
                     }
 
-                    const linkMediaQuery = 'INSERT INTO post_media (post_id, media_id) VALUES (?, ?)';
-                    db.execute(linkMediaQuery, [result.insertId, mediaResult.insertId], (linkErr) => {
-                        if (linkErr) {
-                            return db.rollback(() => {
-                                return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
-                            });
-                        }
-
-                        return db.commit((commitErr) => {
-                            if (commitErr) {
-                                return db.rollback(() => {
-                                    return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
-                                });
-                            }
-
-                            return res.status(201).json({
-                                message: 'Post creado con éxito',
-                                postId: result.insertId,
-                                media_url: mediaUrl
-                            });
-                        });
+                    return res.status(201).json({
+                        message: 'Post creado con éxito',
+                        postId: postId,
+                        media_url: mediaUrl
                     });
                 });
             });
@@ -95,8 +72,8 @@ const getPostsByCommunity = (req, res) => {
     const { community_id } = req.params;
     const query = `
         SELECT 
-            p.id, p.user_id, p.content, p.created_at,
-            u.username, u.score, u.streak,
+            p.id, p.user_id, p.community_id, p.content, p.created_at,
+            u.id as user_db_id, u.username, u.score, u.streak,
             MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
@@ -107,7 +84,7 @@ const getPostsByCommunity = (req, res) => {
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments c ON c.post_id = p.id
         WHERE p.community_id = ?
-        GROUP BY p.id, p.user_id, p.content, p.created_at, u.username, u.score, u.streak
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak
         ORDER BY p.created_at DESC
     `;
 
@@ -124,7 +101,7 @@ const getPostById = (req, res) => {
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
-            u.username, u.score, u.streak,
+            u.id as user_db_id, u.username, u.score, u.streak,
             MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
@@ -135,7 +112,7 @@ const getPostById = (req, res) => {
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments c ON c.post_id = p.id
         WHERE p.id = ?
-        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.username, u.score, u.streak
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak
     `;
 
     db.execute(query, [id], (err, rows) => {
@@ -178,8 +155,8 @@ const getPostsForUser = (req, res) => {
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
-            u.username, u.score, u.streak,
-            c.name as community_name,
+            u.id as user_db_id, u.username, u.score, u.streak,
+            c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
@@ -191,7 +168,7 @@ const getPostsForUser = (req, res) => {
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments com ON com.post_id = p.id
         WHERE p.user_id = ?
-        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.username, u.score, u.streak, c.name
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak, c.id, c.name
         ORDER BY p.created_at DESC
     `;
 
@@ -208,8 +185,8 @@ const getPostsByUserId = (req, res) => {
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
-            u.username, u.score, u.streak,
-            c.name as community_name,
+            u.id as user_db_id, u.username, u.score, u.streak,
+            c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
@@ -221,7 +198,7 @@ const getPostsByUserId = (req, res) => {
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments com ON com.post_id = p.id
         WHERE p.user_id = ?
-        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.username, u.score, u.streak, c.name
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak, c.id, c.name
         ORDER BY p.created_at DESC
     `;
 
@@ -238,8 +215,8 @@ const getFollowingPosts = (req, res) => {
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
-            u.username, u.score, u.streak,
-            c.name as community_name,
+            u.id as user_db_id, u.username, u.score, u.streak,
+            c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
@@ -252,7 +229,7 @@ const getFollowingPosts = (req, res) => {
         LEFT JOIN post_likes pl ON pl.post_id = p.id
         LEFT JOIN comments com ON com.post_id = p.id
         WHERE f.follower_id = ?
-        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.username, u.score, u.streak, c.name
+        GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak, c.id, c.name
         ORDER BY p.created_at DESC
         LIMIT 50
     `;

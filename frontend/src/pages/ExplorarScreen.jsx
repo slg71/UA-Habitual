@@ -2,23 +2,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
-import '../styles/perfil.css'
-import logo from '../assets/logo.png'
+import logoLight from '../assets/logo.png'
+import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
+import CommentsSection from '../components/CommentsSection'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
 const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
 
+const formatearFecha = iso =>
+  iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
+
 export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear, onVerPerfil, onConfiguracion }) {
   const [posts, setPosts] = useState([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [postSeleccionado, setPostSeleccionado] = useState(null)
+  const [commentCount, setCommentCount] = useState(0)
+  const [modoOscuro, setModoOscuro] = useState(document.body.classList.contains('dark-mode'))
 
   // ── Likes persistentes (mismo patrón que InicioScreen y PerfilScreen) ──
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
+
+  // Detectar cambios en modo oscuro
+  useEffect(() => {
+    const observador = new MutationObserver(() => {
+      setModoOscuro(document.body.classList.contains('dark-mode'))
+    })
+    observador.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observador.disconnect()
+  }, [])
 
   useEffect(() => {
     saveLikesCache(likesMap)
@@ -171,8 +186,7 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
     <div className="hb-screen inicio-screen">
 
       <div className="inicio-header">
-        <img src={logo} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
-        <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+        <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
       </div>
 
       <div className="explorar-search-wrapper">
@@ -320,7 +334,16 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
                   <strong>Comunidad:</strong> {postSeleccionado.community_name}
                 </div>
               )}
+              <div className="post-detail-comment">
+                <strong>Comentarios:</strong> {commentCount}
+              </div>
+              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}

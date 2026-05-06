@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import '../styles/habitual.css';
-import '../styles/inicio.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
+import CommentsSection from '../components/CommentsSection';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
 import imagenUsuario from '../assets/imagen-usuario.png';
+import configIcon from '../assets/config.png';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DIAS_SEMANA = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -16,6 +17,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [tabActual, setTabActual] = useState('publicaciones');
   const [showProgreso, setShowProgreso] = useState(false);
   const [postSeleccionado, setPostSeleccionado] = useState(null);
+  const [commentCount, setCommentCount] = useState(0);
   const [user, setUser] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loadingFollow, setLoadingFollow] = useState(false);
@@ -34,6 +36,8 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [fechaCal, setFechaCal] = useState(new Date());
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
@@ -186,6 +190,34 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
       console.error(err);
     } finally {
       setLoadingFollow(false);
+    }
+  };
+
+  const borrarPost = async () => {
+    if (!postSeleccionado || !token) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este post?')) return;
+
+    setIsDeletingPost(true);
+    setDeleteError('');
+    try {
+      const res = await fetch(`${API_BASE}/posts/${postSeleccionado.id}`, {
+        method: 'DELETE',
+        headers: misHeaders
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al eliminar el post');
+      }
+
+      // Eliminar el post de la lista de posts propios
+      setPostsPropios(prev => prev.filter(p => p.id !== postSeleccionado.id));
+      setPostSeleccionado(null);
+    } catch (err) {
+      setDeleteError(err.message || 'Error al eliminar el post');
+      console.error(err);
+    } finally {
+      setIsDeletingPost(false);
     }
   };
 
@@ -410,7 +442,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
               {esPerfilPropio ? (
                 <>
                   <button className="hb-btn hb-btn--primary btn-seguir">Tu perfil</button>
-                  <button className="perfil-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
+                  <button className="perfil-settings" aria-label="Ajustes" onClick={onConfiguracion}><img src={configIcon} alt="Ajustes" className="config-icon" /></button>
                 </>
               ) : (
                 <button
@@ -529,9 +561,26 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
                 <strong>{postSeleccionado.username || user?.username}</strong> {postSeleccionado.content}
               </div>
               <div className="post-detail-comment"><strong>Comunidad:</strong> {postSeleccionado.community_name || 'Sin comunidad'}</div>
-              <div className="post-detail-comment"><strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}</div>
+              <div className="post-detail-comment"><strong>Comentarios:</strong> {commentCount}</div>
               <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
+              {esPerfilPropio && String(postSeleccionado.user_id) === String(user?.id) && (
+                <div className="post-detail-actions">
+                  {deleteError && <p className="delete-error">{deleteError}</p>}
+                  <button
+                    className="btn-delete"
+                    onClick={borrarPost}
+                    disabled={isDeletingPost}
+                  >
+                    {isDeletingPost ? 'Eliminando...' : 'Eliminar post'}
+                  </button>
+                </div>
+              )}
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}

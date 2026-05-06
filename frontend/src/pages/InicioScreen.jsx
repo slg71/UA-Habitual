@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import '../styles/habitual.css'
 import '../styles/inicio.css'
-import '../styles/perfil.css'
 import logoLight from '../assets/logo.png'
 import logoDark from '../assets/logodark.png'
 import BottomNav from '../components/BottomNav'
+import CommentsSection from '../components/CommentsSection'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
@@ -25,6 +25,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
   const [cargando, setCargando] = useState(false)
   const [uniendose, setUniendose] = useState(null)
   const [modoOscuro, setModoOscuro] = useState(document.body.classList.contains('dark-mode'))
+  const [commentCount, setCommentCount] = useState(0)
 
   // 1️⃣ INICIALIZAR desde localStorage (con clave por usuario) para que persista entre navegaciones
   const [likesMap, setLikesMap] = useState(() => loadLikesCache())
@@ -301,7 +302,6 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
       <div className="inicio-header">
         <img src={modoOscuro ? logoDark : logoLight} alt="Habitual" className="hb-logo" style={{ marginBottom: 0 }} />
-        <button className="inicio-settings" aria-label="Ajustes" onClick={onConfiguracion}>⚙️</button>
       </div>
 
       {/* Comunidades */}
@@ -485,10 +485,15 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
                 </div>
               )}
               <div className="post-detail-comment">
-                <strong>Comentarios:</strong> {postSeleccionado.comments_count || 0}
+                <strong>Comentarios:</strong> {commentCount}
               </div>
               <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
             </div>
+
+            <CommentsSection
+              postId={postSeleccionado.id}
+              onCommentCountChange={setCommentCount}
+            />
           </div>
         </div>
       )}
