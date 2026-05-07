@@ -33,11 +33,33 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
           )}
         </div>
 
-        {post.media_url && (
+        {post.media_url && post.media_type === 'image' && (
           <img
             src={parsearUrl(post.media_url)}
             alt="Contenido"
             className="post-detail-img"
+            onError={e => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+        )}
+        {post.media_url && post.media_type === 'video' && (
+          <video
+            src={parsearUrl(post.media_url)}
+            controls
+            className="post-detail-img"
+            onError={e => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+        )}
+        {post.media_url && post.media_type === 'audio' && (
+          <audio
+            src={parsearUrl(post.media_url)}
+            controls
+            style={{ width: '100%', margin: '16px 0' }}
             onError={e => {
               e.target.style.display = 'none'
               e.target.nextSibling.style.display = 'flex'
@@ -50,7 +72,7 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
             padding: '32px 16px', background: 'var(--hb-green-lt)',
             color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center'
           }}>
-            📷 No se ha podido cargar la foto
+            📷 No se ha podido cargar el contenido multimedia
           </div>
         )}
 

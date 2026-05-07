@@ -20,8 +20,8 @@ const storage = multer.diskStorage({
 });
 
 const imageOnlyFilter = (_req, file, cb) => {
-    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
-        return cb(new Error('Solo se permiten imagenes.'));
+    if (!file.mimetype || (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/') && !file.mimetype.startsWith('audio/'))) {
+        return cb(new Error('Solo se permiten archivos multimedia (imagenes, videos, audio).'));
     }
     cb(null, true);
 };

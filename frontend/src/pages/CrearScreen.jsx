@@ -181,7 +181,7 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
 
           <label className="crear-archivo">
             {archivo ? archivo.name : 'Añadir archivo multimedia'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => setArchivo(e.target.files[0])} />
+            <input type="file" accept="image/*,video/*,audio/*" style={{ display: 'none' }} onChange={e => setArchivo(e.target.files[0])} />
           </label>
 
           <div className="crear-botones">

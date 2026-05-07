@@ -17,7 +17,7 @@ export default function CommunityPostCard({
       onClick={() => onOpenPost(post)}
       style={{ cursor: 'pointer' }}
     >
-      {post.media_url ? (
+      {post.media_url && post.media_type === 'image' ? (
         <img
           src={parseUrl(post.media_url)}
           alt="Post"
@@ -26,10 +26,29 @@ export default function CommunityPostCard({
             e.target.nextSibling.style.display = 'flex'
           }}
         />
+      ) : post.media_url && post.media_type === 'video' ? (
+        <video
+          src={parseUrl(post.media_url)}
+          style={{ width: '100%', height: 'auto' }}
+          onError={e => {
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'flex'
+          }}
+        />
+      ) : post.media_url && post.media_type === 'audio' ? (
+        <audio
+          src={parseUrl(post.media_url)}
+          controls
+          style={{ width: '100%' }}
+          onError={e => {
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'flex'
+          }}
+        />
       ) : null}
       {post.media_url ? (
         <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', padding: '20px 12px', background: 'var(--hb-green-lt)', color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center' }}>
-          📷 No se ha podido cargar la foto
+          📷 No se ha podido cargar el contenido multimedia
         </div>
       ) : null}
       <div className="post-footer-mini">

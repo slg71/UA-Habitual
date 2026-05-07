@@ -32,7 +32,7 @@ export default function ExplorePostDetailModal({
           )}
         </div>
 
-        {post.media_url ? (
+        {post.media_url && post.media_type === 'image' ? (
           <>
             <img
               src={parseUrl(post.media_url)}
@@ -45,6 +45,36 @@ export default function ExplorePostDetailModal({
             />
             <div className="explorar-detail-fallback">
               📷 No se ha podido cargar la foto
+            </div>
+          </>
+        ) : post.media_url && post.media_type === 'video' ? (
+          <>
+            <video
+              src={parseUrl(post.media_url)}
+              controls
+              className="post-detail-img"
+              onError={e => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+            <div className="explorar-detail-fallback">
+              📹 No se ha podido cargar el video
+            </div>
+          </>
+        ) : post.media_url && post.media_type === 'audio' ? (
+          <>
+            <audio
+              src={parseUrl(post.media_url)}
+              controls
+              style={{ width: '100%', margin: '16px 0' }}
+              onError={e => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+            <div className="explorar-detail-fallback">
+              🎵 No se ha podido cargar el audio
             </div>
           </>
         ) : null}

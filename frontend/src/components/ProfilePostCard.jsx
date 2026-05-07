@@ -17,7 +17,20 @@ export default function ProfilePostCard({
       onClick={() => onOpenPost(post)}
       style={{ cursor: 'pointer' }}
     >
-      {post.media_url && <img src={parseUrl(post.media_url)} alt="Post user" />}
+      {post.media_url && post.media_type === 'image' && <img src={parseUrl(post.media_url)} alt="Post user" />}
+      {post.media_url && post.media_type === 'video' && (
+        <video
+          src={parseUrl(post.media_url)}
+          style={{ width: '100%', height: 'auto' }}
+        />
+      )}
+      {post.media_url && post.media_type === 'audio' && (
+        <audio
+          src={parseUrl(post.media_url)}
+          controls
+          style={{ width: '100%' }}
+        />
+      )}
       <div className="post-footer-mini">
         {canOpenProfile ? (
           <button

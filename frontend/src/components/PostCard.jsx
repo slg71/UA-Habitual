@@ -12,10 +12,32 @@ export default function PostCard({ post, liked, likeCount, onLike, onSelect, onA
       onClick={onSelect}
       style={{ cursor: 'pointer' }}
     >
-      {post.media_url && (
+      {post.media_url && post.media_type === 'image' && (
         <img
           src={parsearUrl(post.media_url)}
           alt="Post"
+          onError={e => {
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'flex'
+          }}
+        />
+      )}
+      {post.media_url && post.media_type === 'video' && (
+        <video
+          src={parsearUrl(post.media_url)}
+          controls
+          style={{ width: '100%', height: 'auto' }}
+          onError={e => {
+            e.target.style.display = 'none'
+            e.target.nextSibling.style.display = 'flex'
+          }}
+        />
+      )}
+      {post.media_url && post.media_type === 'audio' && (
+        <audio
+          src={parsearUrl(post.media_url)}
+          controls
+          style={{ width: '100%' }}
           onError={e => {
             e.target.style.display = 'none'
             e.target.nextSibling.style.display = 'flex'
@@ -28,7 +50,7 @@ export default function PostCard({ post, liked, likeCount, onLike, onSelect, onA
           padding: '20px 12px', background: 'var(--hb-green-lt)',
           color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center'
         }}>
-          📷 No se ha podido cargar la foto
+          📷 No se ha podido cargar el contenido multimedia
         </div>
       )}
       <div className="post-footer-mini">

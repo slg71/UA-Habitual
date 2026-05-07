@@ -4,7 +4,7 @@ const createPost = (req, res) => {
     const { content, community_id } = req.body || {};
     const userId = req.user.id;
     const mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : null;
-    const mediaType = req.file?.mimetype?.startsWith('image/') ? 'image' : null;
+    const mediaType = req.file ? (req.file.mimetype.startsWith('image/') ? 'image' : req.file.mimetype.startsWith('video/') ? 'video' : req.file.mimetype.startsWith('audio/') ? 'audio' : 'other') : null;
     const mediaMetadata = req.file
         ? JSON.stringify({
             mime_type: req.file.mimetype,
@@ -75,6 +75,7 @@ const getPostsByCommunity = (req, res) => {
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
             MAX(m.url) as media_url,
+            MAX(m.type) as media_type,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
@@ -103,6 +104,7 @@ const getPostById = (req, res) => {
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
             MAX(m.url) as media_url,
+            MAX(m.type) as media_type,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
@@ -158,6 +160,7 @@ const getPostsForUser = (req, res) => {
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
+            MAX(m.type) as media_type,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
@@ -188,6 +191,7 @@ const getPostsByUserId = (req, res) => {
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
+            MAX(m.type) as media_type,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
@@ -218,6 +222,7 @@ const getFollowingPosts = (req, res) => {
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
             MAX(m.url) as media_url,
+            MAX(m.type) as media_type,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p

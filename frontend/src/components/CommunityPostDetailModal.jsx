@@ -29,7 +29,7 @@ export default function CommunityPostDetailModal({
             {post.username}
           </button>
         </div>
-        {post.media_url ? (
+        {post.media_url && post.media_type === 'image' ? (
           <img
             src={parseUrl(post.media_url)}
             alt="Contenido"
@@ -39,10 +39,30 @@ export default function CommunityPostDetailModal({
               e.target.nextSibling.style.display = 'flex'
             }}
           />
+        ) : post.media_url && post.media_type === 'video' ? (
+          <video
+            src={parseUrl(post.media_url)}
+            controls
+            className="post-detail-img"
+            onError={e => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
+        ) : post.media_url && post.media_type === 'audio' ? (
+          <audio
+            src={parseUrl(post.media_url)}
+            controls
+            style={{ width: '100%', margin: '16px 0' }}
+            onError={e => {
+              e.target.style.display = 'none'
+              e.target.nextSibling.style.display = 'flex'
+            }}
+          />
         ) : null}
         {post.media_url ? (
           <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'var(--hb-green-lt)', color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center' }}>
-            📷 No se ha podido cargar la foto
+            📷 No se ha podido cargar el contenido multimedia
           </div>
         ) : null}
         <div className="post-detail-footer">

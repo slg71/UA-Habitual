@@ -39,7 +39,21 @@ export default function ProfilePostDetailModal({
           )}
         </div>
 
-        {post.media_url && <img src={parseUrl(post.media_url)} alt="Contenido" className="post-detail-img" />}
+        {post.media_url && post.media_type === 'image' && <img src={parseUrl(post.media_url)} alt="Contenido" className="post-detail-img" />}
+        {post.media_url && post.media_type === 'video' && (
+          <video
+            src={parseUrl(post.media_url)}
+            controls
+            className="post-detail-img"
+          />
+        )}
+        {post.media_url && post.media_type === 'audio' && (
+          <audio
+            src={parseUrl(post.media_url)}
+            controls
+            style={{ width: '100%', margin: '16px 0' }}
+          />
+        )}
 
         <div className="post-detail-footer">
           <div className="post-detail-likes">
