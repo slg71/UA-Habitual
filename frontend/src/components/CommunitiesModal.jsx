@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { getImagenComunidad } from './comunidadImagenes'
+import { getImagenComunidad } from '../utils/communityImages'
 
 export default function CommunitiesModal({ communities, loading, onJoin, isMember, joiningId, onClose, overlayRef }) {
   return (

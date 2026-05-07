@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import '../styles/habitual.css';
 import '../styles/perfil.css';
-import BottomNav from '../components/BottomNav';
+import BottomNav from '../components/common/BottomNav';
 import ProfilePostCard from '../components/ProfilePostCard';
 import ProfilePostDetailModal from '../components/ProfilePostDetailModal';
 import ProfileProgressModal from '../components/ProfileProgressModal';

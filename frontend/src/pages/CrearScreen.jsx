@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/crear.css'
-import BottomNav from '../components/BottomNav'
+import BottomNav from '../components/common/BottomNav'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken } from '../utils/auth'
 

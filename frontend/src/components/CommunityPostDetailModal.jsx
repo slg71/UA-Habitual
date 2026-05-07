@@ -1,4 +1,4 @@
-import CommentsSection from './CommentsSection'
+import CommentsSection from './common/CommentsSection'
 
 export default function CommunityPostDetailModal({
   post,

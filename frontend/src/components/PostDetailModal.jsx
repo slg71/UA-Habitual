@@ -1,4 +1,4 @@
-import CommentsSection from './CommentsSection'
+import CommentsSection from './common/CommentsSection'
 
 export default function PostDetailModal({ post, liked, likeCount, onLike, onClose, onAuthorClick, commentCount, onCommentCountChange }) {
   const formatearFecha = iso =>

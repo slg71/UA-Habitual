@@ -1,5 +1,5 @@
 import '../styles/habitual.css'
-import PhotoCollage from '../components/PhotoCollage'
+import PhotoCollage from '../components/common/PhotoCollage'
 import logo from '../assets/logo.png'
 import { useState } from 'react'
 

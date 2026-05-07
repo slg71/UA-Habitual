@@ -1,4 +1,4 @@
-import CommentsSection from './CommentsSection'
+import CommentsSection from './common/CommentsSection'
 import imagenUsuario from '../assets/imagen-usuario.png'
 
 export default function ProfilePostDetailModal({

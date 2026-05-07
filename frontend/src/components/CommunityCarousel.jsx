@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { getImagenComunidad } from './comunidadImagenes'
+import { getImagenComunidad } from '../utils/communityImages'
 
 export default function CommunityCarousel({ communities, onSelectCommunity, onAddClick }) {
   const comunidadesRef = useRef(null)
