@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/comunidad.css'
 import BottomNav from '../components/BottomNav'
-import CommentsSection from '../components/CommentsSection'
+import CommunityPostCard from '../components/CommunityPostCard'
+import CommunityPostDetailModal from '../components/CommunityPostDetailModal'
 import { getImagenComunidad } from '../components/comunidadImagenes'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
@@ -214,103 +215,37 @@ export default function ComunidadScreen({ comunidad, onBack, onInicio, onExplora
           <p className="comunidad-empty">Aún no hay publicaciones en esta comunidad.</p>
         ) : (
           <div className="perfil-galeria">
-            {posts.map(post => {
-              const liked = likesMap[post.id]?.liked ?? false
-              const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0
-              return (
-                <div
-                  key={post.id}
-                  className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
-                  onClick={() => setPostSeleccionado(post)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {post.media_url ? (
-                    <img src={parsearUrl(post.media_url)} alt="Post"
-                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
-                  ) : null}
-                  {post.media_url ? (
-                    <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', padding: '20px 12px', background: 'var(--hb-green-lt)', color: 'var(--hb-brown-mid)', fontSize: 12, textAlign: 'center' }}>
-                      📷 No se ha podido cargar la foto
-                    </div>
-                  ) : null}
-                  <div className="post-footer-mini">
-                    {post.username && (
-                      <button
-                        type="button"
-                        className="post-autor post-autor--clickable"
-                        onClick={e => {
-                          e.stopPropagation()
-                          abrirPerfil(post.user_id)
-                        }}
-                      >
-                        @{post.username}
-                      </button>
-                    )}
-                    <p>{post.content}</p>
-                    <span className="post-meta">
-                      {formatearFecha(post.created_at)}
-                      <button className={`like-btn ${liked ? 'liked' : ''}`} onClick={e => toggleLike(post, e)}>
-                        {liked ? '♥' : '♡'} {likeCount}
-                      </button>
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
+            {posts.map(post => (
+              <CommunityPostCard
+                key={post.id}
+                post={post}
+                liked={likesMap[post.id]?.liked ?? false}
+                likeCount={likesMap[post.id]?.count ?? post.likes_count ?? 0}
+                onOpenPost={setPostSeleccionado}
+                onOpenAuthor={abrirPerfil}
+                onToggleLike={toggleLike}
+                formatDate={formatearFecha}
+                parseUrl={parsearUrl}
+              />
+            ))}
           </div>
         )}
       </div>
 
       {postSeleccionado && (
-        <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
-          <div className="post-detail-card" onClick={e => e.stopPropagation()}>
-            <div className="post-detail-header">
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--hb-green-lt)', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: 'var(--hb-green-dk)', flexShrink: 0 }}>
-                {postSeleccionado.username?.[0]?.toUpperCase()}
-              </div>
-              <button
-                type="button"
-                className="post-detail-username post-detail-username-btn"
-                onClick={() => abrirPerfil(postSeleccionado.user_id)}
-              >
-                {postSeleccionado.username}
-              </button>
-            </div>
-            {postSeleccionado.media_url ? (
-              <img src={parsearUrl(postSeleccionado.media_url)} alt="Contenido" className="post-detail-img"
-                onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
-            ) : null}
-            {postSeleccionado.media_url ? (
-              <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'var(--hb-green-lt)', color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center' }}>
-                📷 No se ha podido cargar la foto
-              </div>
-            ) : null}
-            <div className="post-detail-footer">
-              <div className="post-detail-likes">
-                <button
-                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
-                  onClick={e => toggleLike(postSeleccionado, e)}
-                >
-                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
-                </button>
-                <span className="like-count">
-                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
-                </span>
-              </div>
-              <div className="post-detail-caption">
-                <strong>{postSeleccionado.username}</strong> {postSeleccionado.content}
-              </div>
-              <div className="post-detail-comment"><strong>Comunidad:</strong> {getTituloComunidad(comunidad?.name)}</div>
-              <div className="post-detail-comment"><strong>Comentarios:</strong> {commentCount}</div>
-              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
-            </div>
-
-            <CommentsSection
-              postId={postSeleccionado.id}
-              onCommentCountChange={setCommentCount}
-            />
-          </div>
-        </div>
+        <CommunityPostDetailModal
+          post={postSeleccionado}
+          communityName={getTituloComunidad(comunidad?.name)}
+          liked={likesMap[postSeleccionado.id]?.liked ?? false}
+          likeCount={likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+          commentCount={commentCount}
+          onLike={toggleLike}
+          onClose={() => setPostSeleccionado(null)}
+          onOpenAuthor={abrirPerfil}
+          onCommentCountChange={setCommentCount}
+          formatDate={formatearFecha}
+          parseUrl={parsearUrl}
+        />
       )}
 
       <BottomNav onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />
