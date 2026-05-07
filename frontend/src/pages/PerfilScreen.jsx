@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import '../styles/habitual.css';
 import '../styles/perfil.css';
 import BottomNav from '../components/BottomNav';
-import CommentsSection from '../components/CommentsSection';
+import ProfilePostCard from '../components/ProfilePostCard';
+import ProfilePostDetailModal from '../components/ProfilePostDetailModal';
+import ProfileProgressModal from '../components/ProfileProgressModal';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
@@ -382,6 +384,16 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     }
   };
 
+  const actualizarNuevoObjetivo = (cambios) => {
+    setNuevoObjetivo(prev => ({ ...prev, ...cambios }));
+  };
+
+  const completarObjetivo = async (objetivo) => {
+    if (objetivo.status === 'completed') return;
+    await fetch(`${API_BASE}/goals/${objetivo.id}/complete`, { method: 'PATCH', headers: misHeaders });
+    setObjetivos(prev => prev.map(o => o.id === objetivo.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
+  };
+
   const añoActual = fechaCal.getFullYear();
   const mesActual = fechaCal.getMonth();
   const fechaDeHoy = new Date();
@@ -492,188 +504,68 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           const likeCount = likesMap[post.id]?.count ?? post.likes_count ?? 0;
           const puedeAbrirPerfil = !!onVerPerfil && post.user_id && String(post.user_id) !== String(user?.id);
           return (
-            <div
+            <ProfilePostCard
               key={post.id}
-              className={`perfil-post ${post.media_url ? '' : 'perfil-post--sin-img'}`}
-              onClick={() => setPostSeleccionado(post)}
-              style={{ cursor: 'pointer' }}
-            >
-              {post.media_url && <img src={parsearUrl(post.media_url)} alt="Post user" />}
-              <div className="post-footer-mini">
-                {puedeAbrirPerfil ? (
-                  <button
-                    type="button"
-                    className="post-autor post-autor--clickable"
-                    onClick={e => {
-                      e.stopPropagation()
-                      abrirPerfil(post.user_id)
-                    }}
-                  >
-                    @{post.username || 'Usuario'}
-                  </button>
-                ) : null}
-                <p>{post.content}</p>
-                <span className="post-meta">
-                  {formatearFecha(post.created_at)}
-                  <button className={`like-btn ${liked ? 'liked' : ''}`} onClick={e => toggleLike(post, e)}>
-                    {liked ? '♥' : '♡'} {likeCount}
-                  </button>
-                </span>
-              </div>
-            </div>
+              post={post}
+              liked={likesMap[post.id]?.liked ?? false}
+              likeCount={likesMap[post.id]?.count ?? post.likes_count ?? 0}
+              canOpenProfile={puedeAbrirPerfil}
+              onOpenPost={setPostSeleccionado}
+              onOpenAuthor={abrirPerfil}
+              onToggleLike={toggleLike}
+              formatDate={formatearFecha}
+              parseUrl={parsearUrl}
+            />
           );
         })}
       </section>
 
       {postSeleccionado && (
-        <div className="modal-overlay post-overlay" onClick={() => setPostSeleccionado(null)}>
-          <div className="post-detail-card" onClick={e => e.stopPropagation()}>
-            <div className="post-detail-header">
-              <img src={imagenUsuario} alt="Avatar" className="post-detail-avatar" />
-              {postSeleccionado.user_id && String(postSeleccionado.user_id) !== String(user?.id) ? (
-                <button
-                  type="button"
-                  className="post-detail-username post-detail-username-btn"
-                  onClick={() => abrirPerfil(postSeleccionado.user_id)}
-                >
-                  {postSeleccionado.username || user?.username}
-                </button>
-              ) : (
-                <span className="post-detail-username">{postSeleccionado.username || user?.username}</span>
-              )}
-            </div>
-            {postSeleccionado.media_url && (
-              <img src={parsearUrl(postSeleccionado.media_url)} alt="Contenido" className="post-detail-img" />
-            )}
-            <div className="post-detail-footer">
-              <div className="post-detail-likes">
-                <button
-                  className={`like-btn like-btn--lg ${likesMap[postSeleccionado.id]?.liked ? 'liked' : ''}`}
-                  onClick={e => toggleLike(postSeleccionado, e)}
-                >
-                  {likesMap[postSeleccionado.id]?.liked ? '♥' : '♡'}
-                </button>
-                <span className="like-count">
-                  {likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
-                </span>
-              </div>
-              <div className="post-detail-caption">
-                <strong>{postSeleccionado.username || user?.username}</strong> {postSeleccionado.content}
-              </div>
-              <div className="post-detail-comment"><strong>Comunidad:</strong> {postSeleccionado.community_name || 'Sin comunidad'}</div>
-              <div className="post-detail-comment"><strong>Comentarios:</strong> {commentCount}</div>
-              <div className="post-detail-date">{formatearFecha(postSeleccionado.created_at)}</div>
-              {esPerfilPropio && String(postSeleccionado.user_id) === String(user?.id) && (
-                <div className="post-detail-actions">
-                  {deleteError && <p className="delete-error">{deleteError}</p>}
-                  <button
-                    className="btn-delete"
-                    onClick={borrarPost}
-                    disabled={isDeletingPost}
-                  >
-                    {isDeletingPost ? 'Eliminando...' : 'Eliminar post'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <CommentsSection
-              postId={postSeleccionado.id}
-              onCommentCountChange={setCommentCount}
-            />
-          </div>
-        </div>
+        <ProfilePostDetailModal
+          post={postSeleccionado}
+          currentUsername={user?.username}
+          currentUserId={user?.id}
+          liked={likesMap[postSeleccionado.id]?.liked ?? false}
+          likeCount={likesMap[postSeleccionado.id]?.count ?? postSeleccionado.likes_count ?? 0}
+          onLike={toggleLike}
+          onClose={() => setPostSeleccionado(null)}
+          onOpenAuthor={abrirPerfil}
+          commentCount={commentCount}
+          onCommentCountChange={setCommentCount}
+          onDelete={borrarPost}
+          deleting={isDeletingPost}
+          deleteError={deleteError}
+          formatDate={formatearFecha}
+          parseUrl={parsearUrl}
+        />
       )}
 
       {esPerfilPropio && showProgreso && (
-        <div className="modal-overlay" onClick={() => setShowProgreso(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="progreso-circular">
-                <span>{miProgreso}%</span>
-                <small>Progreso</small>
-              </div>
-              <div className="progreso-nivel">
-                <span className="nivel-insignia">{user?.rank_id || 1}</span>
-                <small>{user?.rank_name || 'Nivel'}</small>
-              </div>
-            </div>
-            <div className="calendario-placeholder">
-              <div className="cal-header">
-                <span style={{ cursor: 'pointer', padding: '0 10px' }} onClick={() => setFechaCal(new Date(añoActual, mesActual - 1, 1))}>&lt;</span>
-                <span>{MESES[mesActual]} {añoActual}</span>
-                <span style={{ cursor: 'pointer', padding: '0 10px' }} onClick={() => setFechaCal(new Date(añoActual, mesActual + 1, 1))}>&gt;</span>
-              </div>
-              <div className="cal-grid">
-                {DIAS_SEMANA.map(dia => <span key={dia} className="cal-weekday">{dia}</span>)}
-                {Array.from({ length: diaPrimerSemana }).map((_, i) => <span key={`vacio-${i}`} />)}
-                {Array.from({ length: diasTotalesDelMes }, (_, i) => i + 1).map(diaDelMes => {
-                  const esHoy = (diaDelMes === fechaDeHoy.getDate() && mesActual === fechaDeHoy.getMonth() && añoActual === fechaDeHoy.getFullYear());
-                  return (
-                    <div key={diaDelMes} className={`cal-dia-wrapper ${getClaseRacha(diaDelMes)}`}>
-                      <span className={`cal-dia-num ${esHoy ? 'hoy' : ''}`}>{diaDelMes}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="objetivos-section">
-              <div className="objetivos-header">
-                <h3>⭐ Objetivos</h3>
-                <button className="btn-add" onClick={() => { setShowFormObj(!showFormObj); setErrorObj(''); }}>
-                  {showFormObj ? '✕ Cancelar' : '＋ Añadir'}
-                </button>
-              </div>
-              {showFormObj && (
-                <div className="objetivo-form">
-                  <div className="hb-field">
-                    <label>Título</label>
-                    <input type="text" placeholder="Ej: Correr 5km" value={nuevoObjetivo.title} onChange={e => setNuevoObjetivo({ ...nuevoObjetivo, title: e.target.value })} />
-                  </div>
-                  <div className="hb-field">
-                    <label>Dificultad</label>
-                    <select className="objetivo-select" value={nuevoObjetivo.difficulty} onChange={e => setNuevoObjetivo({ ...nuevoObjetivo, difficulty: e.target.value })}>
-                      <option value="easy">Fácil</option>
-                      <option value="medium">Media</option>
-                      <option value="hard">Difícil</option>
-                    </select>
-                  </div>
-                  <div className="hb-field">
-                    <label>Comunidad</label>
-                    <select className="objetivo-select" value={nuevoObjetivo.community_id} onChange={e => setNuevoObjetivo({ ...nuevoObjetivo, community_id: e.target.value })}>
-                      <option value="">-- Selecciona --</option>
-                      {comunidades.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  {errorObj && <p className="objetivo-error">{errorObj}</p>}
-                  <button className="hb-btn hb-btn--primary" onClick={btnGuardarObjetivo} disabled={isSaving}>
-                    {isSaving ? 'Guardando...' : 'Guardar objetivo'}
-                  </button>
-                </div>
-              )}
-              <ul className="objetivos-list">
-                {!objetivos.length && !showFormObj && <p className="objetivo-vacio">No tienes objetivos aún.</p>}
-                {objetivos.map(objetivo => (
-                  <li key={objetivo.id}>
-                    <div>
-                      <p>{objetivo.title}</p>
-                      <small>
-                        {objetivo.status === 'completed'
-                          ? `Completado el ${formatearFecha(objetivo.completed_at)}`
-                          : `${objetivo.community_name || '—'} · ${objetivo.difficulty}`}
-                      </small>
-                    </div>
-                    <input type="checkbox" checked={objetivo.status === 'completed'} onChange={async () => {
-                      if (objetivo.status === 'completed') return;
-                      await fetch(`${API_BASE}/goals/${objetivo.id}/complete`, { method: 'PATCH', headers: misHeaders });
-                      setObjetivos(objetivos.map(o => o.id === objetivo.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
-                    }} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+        <ProfileProgressModal
+          open={showProgreso}
+          onClose={() => setShowProgreso(false)}
+          user={user}
+          progress={miProgreso}
+          monthLabel={MESES[mesActual]}
+          yearLabel={añoActual}
+          onPrevMonth={() => setFechaCal(new Date(añoActual, mesActual - 1, 1))}
+          onNextMonth={() => setFechaCal(new Date(añoActual, mesActual + 1, 1))}
+          weekdays={DIAS_SEMANA}
+          emptySlots={diaPrimerSemana}
+          daysInMonth={diasTotalesDelMes}
+          isToday={diaDelMes => diaDelMes === fechaDeHoy.getDate() && mesActual === fechaDeHoy.getMonth() && añoActual === fechaDeHoy.getFullYear()}
+          getStreakClass={getClaseRacha}
+          showForm={showFormObj}
+          onToggleForm={() => { setShowFormObj(!showFormObj); setErrorObj(''); }}
+          newGoal={nuevoObjetivo}
+          onChangeGoal={actualizarNuevoObjetivo}
+          onSaveGoal={btnGuardarObjetivo}
+          saving={isSaving}
+          error={errorObj}
+          communities={comunidades}
+          goals={objetivos}
+          onCompleteGoal={completarObjetivo}
+        />
       )}
 
       <BottomNav active={esPerfilPropio ? 'perfil' : ''} onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />
