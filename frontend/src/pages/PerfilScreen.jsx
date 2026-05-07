@@ -65,6 +65,73 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
   };
 
+  const calcularRachaDesdePost = (posts) => {
+    if (!posts || posts.length === 0) return { dias: 0, historial: [] };
+
+    // Convertir posts a fechas normalizadas (solo fecha, sin hora)
+    const fechasConPosts = [];
+    
+    posts.forEach(post => {
+      if (!post.created_at) return;
+      const fecha = new Date(post.created_at);
+      fecha.setHours(0, 0, 0, 0);
+      
+      // Evitar duplicados del mismo día
+      if (!fechasConPosts.some(f => f.getTime() === fecha.getTime())) {
+        fechasConPosts.push(fecha);
+      }
+    });
+
+    // Ordenar descendentemente (más recientes primero)
+    fechasConPosts.sort((a, b) => b - a);
+
+    if (fechasConPosts.length === 0) return { dias: 0, historial: [] };
+
+    // Verificar si la racha está activa (hay un post hoy o ayer)
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    const ultimoPostFecha = fechasConPosts[0];
+
+    // Si el último post fue hace más de 1 día, la racha se rompió
+    const diasDesdeUltimo = Math.floor((hoy - ultimoPostFecha) / (1000 * 60 * 60 * 24));
+    
+    if (diasDesdeUltimo > 1) {
+      return { dias: 0, historial: [] };
+    }
+
+    // Contar días consecutivos hacia atrás desde hoy
+    let diasRacha = 0;
+    let fechaActual = new Date(hoy);
+    let indicePost = 0;
+
+    while (indicePost < fechasConPosts.length) {
+      const fechaPostActual = fechasConPosts[indicePost];
+
+      if (fechaActual.getTime() === fechaPostActual.getTime()) {
+        diasRacha++;
+        fechaActual.setDate(fechaActual.getDate() - 1);
+        indicePost++;
+      } else {
+        break;
+      }
+    }
+
+    // Construir historial de racha (últimos N días)
+    const historial = [];
+    for (let i = 0; i < diasRacha; i++) {
+      let fecha = new Date(hoy);
+      fecha.setDate(fecha.getDate() - i);
+      historial.push({
+        mes: fecha.getMonth(),
+        año: fecha.getFullYear(),
+        dia: fecha.getDate()
+      });
+    }
+
+    return { dias: diasRacha, historial };
+  };
+
   const calcularDiasRacha = (streakActual) => {
     const totalDias = streakActual || 0;
     const historial = [];
@@ -284,6 +351,29 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     cargarPerfil();
   }, [perfilVisitadoId, refreshPerfilKey]);
 
+  // Recargar posts del usuario propio cuando entra a la pantalla para actualizar la racha
+  useEffect(() => {
+    if (!esPerfilPropio || !token) return;
+
+    const recargarPostsAlEntrar = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/posts/user`, { headers: getAuthHeaders(token) });
+        if (res.ok) {
+          const listaPosts = await res.json();
+          setPostsPropios(Array.isArray(listaPosts) ? listaPosts : []);
+          if (Array.isArray(listaPosts)) {
+            precargarLikes(listaPosts);
+          }
+        }
+      } catch (err) {
+        console.error('Error recargando posts:', err);
+      }
+    };
+
+    // Recargar posts una vez cuando entra al perfil propio
+    recargarPostsAlEntrar();
+  }, [esPerfilPropio, token]);
+
   // Carga del tab likes
   useEffect(() => {
     if (tabActual !== 'likes' || !token) return;
@@ -399,7 +489,10 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const fechaDeHoy = new Date();
   const diaPrimerSemana = new Date(añoActual, mesActual, 1).getDay();
   const diasTotalesDelMes = new Date(añoActual, mesActual + 1, 0).getDate();
-  const historialRacha = calcularDiasRacha(user?.streak);
+  
+  // Calcular racha desde posts reales
+  const { dias: diasRachaActuales, historial: historialRachaCalculado } = calcularRachaDesdePost(postsPropios);
+  const historialRacha = historialRachaCalculado;
   const diasRachaEsteMes = historialRacha.filter(d => d.mes === mesActual && d.año === añoActual);
   const diasRachaSet = new Set(diasRachaEsteMes.map(d => d.dia));
 
@@ -475,7 +568,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
             <span className="stat-tag">{errorFetch}</span>
           ) : (
             <>
-              <span className="stat-tag">⚡ {user?.streak || 0} días</span>
+              <span className="stat-tag">⚡ {diasRachaActuales || 0} días</span>
               <span className="stat-tag">🖼️ {user?.posts_count || 0} Posts</span>
               <span className="stat-tag">👥 {user?.follower_count || 0} Seguidores</span>
               <span className="stat-tag">👣 {user?.following_count || 0} Siguiendo</span>
