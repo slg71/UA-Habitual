@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import '../styles/habitual.css'
 import '../styles/configuracion.css'
+import '../styles/configuracion-components.css'
 import BottomNav from '../components/BottomNav'
+import ConfigPreferenceRow from '../components/ConfigPreferenceRow'
+import ConfigEditProfileModal from '../components/ConfigEditProfileModal'
+import ConfigDeleteAccountModal from '../components/ConfigDeleteAccountModal'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken, loadUserSettings, saveUserSettings, clearUserSettings } from '../utils/auth'
 
@@ -55,6 +59,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
   const [cuentaEliminada, setCuentaEliminada] = useState(false)
   const [configMessage, setConfigMessage]     = useState('')
   const [deleteLoading, setDeleteLoading]     = useState(false)
+  const [avatarPreview, setAvatarPreview]     = useState('')
+  const [bannerPreview, setBannerPreview]     = useState('')
 
   const guardarPreferencias = () => {
     saveUserSettings({ modoOscuro, textoGrande, altoContraste })
@@ -124,6 +130,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
         setEditEmail(data.email || '')
         setAvatarFile(null)
         setBannerFile(null)
+        setAvatarPreview(data.avatar_url || '')
+        setBannerPreview(data.banner_url || '')
       })
       .catch(error => {
         setEditError(error.message || 'No se pudo cargar el perfil')
@@ -203,6 +211,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
           setConfirmPassword('')
           setAvatarFile(null)
           setBannerFile(null)
+          setAvatarPreview('')
+          setBannerPreview('')
           setEditSuccess('Perfil actualizado correctamente.')
           setEditPerfilOpen(false)
           // Navegar al perfil para recargar la imagen
@@ -242,6 +252,8 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
           setConfirmPassword('')
           setAvatarFile(null)
           setBannerFile(null)
+          setAvatarPreview('')
+          setBannerPreview('')
           setEditSuccess('Perfil actualizado correctamente.')
           setEditPerfilOpen(false)
           // Navegar al perfil para recargar la imagen
@@ -331,27 +343,9 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
       {/* ── Opciones ── */}
       <div className="cfg-lista">
 
-        {/*toggle de Texto Grande */}
-        <div className="cfg-fila">
-          <span>Tamaño de texto</span>
-          <div className={`cfg-toggle ${textoGrande ? 'cfg-toggle--on' : ''}`} onClick={() => setTextoGrande(v => !v)}>
-            <span className="cfg-toggle-bola" />
-          </div>
-        </div>
-
-        <div className="cfg-fila">
-          <span>Modo oscuro</span>
-          <div className={`cfg-toggle ${modoOscuro ? 'cfg-toggle--on' : ''}`} onClick={() => setModoOscuro(v => !v)}>
-            <span className="cfg-toggle-bola" />
-          </div>
-        </div>
-
-        <div className="cfg-fila">
-          <span>Alto contraste</span>
-          <div className={`cfg-toggle ${altoContraste ? 'cfg-toggle--on' : ''}`} onClick={() => setAltoContraste(v => !v)}>
-            <span className="cfg-toggle-bola" />
-          </div>
-        </div>
+        <ConfigPreferenceRow label="Tamaño de texto" active={textoGrande} onToggle={() => setTextoGrande(v => !v)} />
+        <ConfigPreferenceRow label="Modo oscuro" active={modoOscuro} onToggle={() => setModoOscuro(v => !v)} />
+        <ConfigPreferenceRow label="Alto contraste" active={altoContraste} onToggle={() => setAltoContraste(v => !v)} />
 
         <div className="cfg-fila" style={{ cursor: 'pointer' }} onClick={() => { setEditPerfilOpen(true); setEditError(''); setEditSuccess('') }}>
           <span>Editar perfil</span>
@@ -383,148 +377,53 @@ export default function ConfiguracionScreen({ onBack, onInicio, onExplorar, onPe
       />
 
       {/* ── Modal editar perfil ── */}
-      {editPerfilOpen && (
-        <div className="cfg-overlay">
-          <div className="cfg-modal">
-
-            <h2 className="cfg-modal-titulo">Editar perfil</h2>
-            <p className="cfg-modal-texto">Actualiza tu nombre, email, contraseña o imágenes de perfil.</p>
-
-            {editLoading ? (
-              <p className="cfg-modal-texto">Cargando información...</p>
-            ) : (
-              <div className="cfg-modal-scrollable">
-                <form className="hb-form" onSubmit={e => { e.preventDefault(); guardarPerfil() }}>
-                  <div className="hb-field">
-                    <label>Nombre de usuario</label>
-                    <input
-                      type="text"
-                      placeholder="Tu nombre de usuario"
-                      value={editUsername}
-                      onChange={e => setEditUsername(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="hb-field">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      placeholder="usuario@ejemplo.com"
-                      value={editEmail}
-                      onChange={e => setEditEmail(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="hb-field">
-                    <label>Foto de perfil</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0] || null
-                        setAvatarFile(file)
-                      }}
-                    />
-                  </div>
-
-                  <div className="hb-field">
-                    <label>Foto de portada</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0] || null
-                        setBannerFile(file)
-                      }}
-                    />
-                  </div>
-
-                  <div className="hb-field">
-                    <label>Nueva contraseña</label>
-                    <input
-                      type="password"
-                      placeholder="Nueva contraseña"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="hb-field">
-                    <label>Confirmar contraseña</label>
-                    <input
-                      type="password"
-                      placeholder="Repite la contraseña"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-
-                  {editError && <p className="cfg-error">{editError}</p>}
-                  {editSuccess && <p className="cfg-success">{editSuccess}</p>}
-                </form>
-              </div>
-            )}
-
-            <div className="cfg-botones">
-              <button
-                type="button"
-                className="hb-btn hb-btn--secondary cfg-btn"
-                onClick={() => {
-                  setEditPerfilOpen(false)
-                  setEditError('')
-                  setNewPassword('')
-                  setConfirmPassword('')
-                  setAvatarFile(null)
-                  setBannerFile(null)
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="hb-btn hb-btn--primary cfg-btn"
-                onClick={guardarPerfil}
-                disabled={editSaving}
-              >
-                {editSaving ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+      <ConfigEditProfileModal
+        open={editPerfilOpen}
+        loading={editLoading}
+        saving={editSaving}
+        error={editError}
+        success={editSuccess}
+        username={editUsername}
+        email={editEmail}
+        avatarPreview={avatarPreview}
+        bannerPreview={bannerPreview}
+        onClose={() => {
+          setEditPerfilOpen(false)
+          setEditError('')
+          setEditSuccess('')
+          setNewPassword('')
+          setConfirmPassword('')
+          setAvatarFile(null)
+          setBannerFile(null)
+        }}
+        onSave={guardarPerfil}
+        onUsernameChange={setEditUsername}
+        onEmailChange={setEditEmail}
+        onAvatarChange={setAvatarFile}
+        onBannerChange={setBannerFile}
+        onPasswordChange={setNewPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+      />
 
       {/* ── Modal editar perfil ── */}
-      {modalEliminar && (
-        <div className="cfg-overlay">
-          <div className="cfg-modal">
-
-            <h2 className="cfg-modal-titulo">¿Desea eliminar tu cuenta?</h2>
-
-            <p className="cfg-modal-texto">
-              Se eliminarán todos los datos de la cuenta y se cerrará la sesión automáticamente.
-            </p>
-
-            <div className="hb-field">
-              <label>Contraseña</label>
-              <input type="password" placeholder="Contraseña" value={passEliminar} onChange={e => setPassEliminar(e.target.value)} />
-            </div>
-
-            <div className="hb-field">
-              <label>Confirmar contraseña</label>
-              <input type="password" placeholder="Contraseña" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
-            </div>
-
-            {errorEliminar && <p className="cfg-error">{errorEliminar}</p>}
-
-            <div className="cfg-botones">
-              <button className="hb-btn hb-btn--secondary cfg-btn" onClick={() => { setModalEliminar(false); setPassEliminar(''); setConfirmPass(''); setErrorEliminar('') }}>Cancelar</button>
-              <button className="hb-btn hb-btn--primary cfg-btn" onClick={confirmarEliminar} disabled={deleteLoading}>{deleteLoading ? 'Eliminando...' : 'Confirmar'}</button>
-            </div>
-
-          </div>
-        </div>
-      )}
+      <ConfigDeleteAccountModal
+        open={modalEliminar}
+        loading={deleteLoading}
+        error={errorEliminar}
+        password={passEliminar}
+        confirmPassword={confirmPass}
+        onClose={() => {
+          setModalEliminar(false)
+          setPassEliminar('')
+          setConfirmPass('')
+          setErrorEliminar('')
+        }}
+        onDelete={confirmarEliminar}
+        onPasswordChange={setPassEliminar}
+        onConfirmPasswordChange={setConfirmPass}
+      />
 
     </div>
   )
