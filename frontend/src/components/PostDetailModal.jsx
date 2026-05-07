@@ -1,11 +1,24 @@
+import { useState } from 'react'
 import CommentsSection from './common/CommentsSection'
+import DownloadConfirmModal from './DownloadConfirmModal'
+import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
 import '../styles/post-detail-shared.css'
 
 export default function PostDetailModal({ post, liked, likeCount, onLike, onClose, onAuthorClick, commentCount, onCommentCountChange }) {
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false)
+
   const formatearFecha = iso =>
     iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
   const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
+
+  const handleDownload = () => {
+    if (post.media_url) {
+      const filename = getFilenameFromUrl(post.media_url, post.media_type)
+      downloadFile(post.media_url, filename)
+      setShowDownloadConfirm(false)
+    }
+  }
 
   return (
     <div className="modal-overlay post-overlay" onClick={onClose}>
@@ -31,7 +44,19 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
               #{post.community_name}
             </span>
           )}
-          <button className="post-detail-close" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            {post.media_url && (
+              <button
+                className="post-detail-close"
+                onClick={() => setShowDownloadConfirm(true)}
+                title="Descargar archivo"
+                style={{ fontSize: 18 }}
+              >
+                ⬇️
+              </button>
+            )}
+            <button className="post-detail-close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         {post.media_url && post.media_type === 'image' && (
@@ -106,6 +131,13 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
           onCommentCountChange={onCommentCountChange}
         />
       </div>
+      {showDownloadConfirm && (
+        <DownloadConfirmModal
+          onConfirm={handleDownload}
+          onCancel={() => setShowDownloadConfirm(false)}
+          filename={getFilenameFromUrl(post.media_url, post.media_type)}
+        />
+      )}
     </div>
   )
 }
