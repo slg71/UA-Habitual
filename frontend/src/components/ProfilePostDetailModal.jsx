@@ -1,5 +1,6 @@
 import CommentsSection from './common/CommentsSection'
 import imagenUsuario from '../assets/imagen-usuario.png'
+import '../styles/post-detail-shared.css'
 
 export default function ProfilePostDetailModal({
   post,

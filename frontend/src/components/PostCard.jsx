@@ -1,3 +1,5 @@
+import '../styles/post-shared.css'
+
 export default function PostCard({ post, liked, likeCount, onLike, onSelect, onAuthorClick }) {
   const formatearFecha = iso =>
     iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''

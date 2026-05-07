@@ -1,0 +1,97 @@
+/* ════════════════════════════════════════════════════
+   post-shared.css  –  Estilos COMPARTIDOS para posts
+   Usado por PostCard, ProfilePostCard, CommunityPostCard, ExplorePostCard
+   ════════════════════════════════════════════════════ */
+
+/* ── Galería de Posts en Columnas ── */
+.perfil-galeria {
+  columns: 2;
+  column-gap: 12px;
+  padding: 0 20px 80px;
+  width: 100%;
+}
+
+.perfil-post {
+  break-inside: avoid;
+  margin-bottom: 12px;
+  background: var(--hb-bg-card);
+  border: 1px solid var(--hb-green-lt);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.perfil-post--sin-img {
+  min-height: 0px;
+}
+
+.perfil-post img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
+.post-footer-mini {
+  padding: 10px;
+  background: var(--hb-bg);
+}
+
+.post-footer-mini p {
+  font-size: 11px;
+  margin: 0 0 6px;
+  color: var(--hb-text);
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--hb-brown-mid);
+  gap: 8px;
+}
+
+.post-autor {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--hb-brown);
+  font-weight: 600;
+  font-size: 11px;
+  cursor: default;
+}
+
+.post-autor--clickable {
+  cursor: pointer;
+  color: var(--hb-green-dk);
+  transition: opacity 0.2s;
+}
+.post-autor--clickable:hover {
+  opacity: 0.8;
+}
+
+/* ── Botón de Like ── */
+.like-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--hb-brown-mid);
+  transition: transform 0.15s;
+  padding: 0;
+}
+.like-btn:active { transform: scale(1.2); }
+.like-btn.liked { color: #ff6b6b; }
+
+.like-btn--lg {
+  font-size: 26px;
+}
+
+.like-count {
+  font-size: 16px;
+  color: var(--hb-brown-mid);
+  font-weight: 700;
+}

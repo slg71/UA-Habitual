@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { API_BASE, getAuthHeaders } from '../../utils/api'
 import { getStoredToken } from '../../utils/auth'
+import '../../styles/comments-shared.css'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''

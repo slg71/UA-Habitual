@@ -1,3 +1,5 @@
+import '../styles/post-shared.css'
+
 export default function ProfilePostCard({
   post,
   liked,

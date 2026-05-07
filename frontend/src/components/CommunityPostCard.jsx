@@ -1,3 +1,5 @@
+import '../styles/post-shared.css'
+
 export default function CommunityPostCard({
   post,
   liked,
