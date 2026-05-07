@@ -31,6 +31,7 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
               #{post.community_name}
             </span>
           )}
+          <button className="post-detail-close" onClick={onClose}>✕</button>
         </div>
 
         {post.media_url && post.media_type === 'image' && (

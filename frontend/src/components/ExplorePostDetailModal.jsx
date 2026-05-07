@@ -30,6 +30,7 @@ export default function ExplorePostDetailModal({
           {post.community_name && (
             <span className="explorar-detail-community">#{post.community_name}</span>
           )}
+          <button className="post-detail-close" onClick={onClose}>✕</button>
         </div>
 
         {post.media_url && post.media_type === 'image' ? (

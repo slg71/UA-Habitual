@@ -10,10 +10,18 @@
   border-radius: 20px;
   width: 100%;
   max-width: 380px;
-  overflow: hidden;
+  max-height: 85vh; 
+  overflow-y: auto; 
+  scrollbar-width: none; /* Oculta la barra en Firefox */
+  
   box-shadow: 0 15px 35px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
+}
+
+/* Oculta la barra de scroll en Chrome/Safari/Edge para un diseño más limpio */
+.post-detail-card::-webkit-scrollbar {
+  display: none;
 }
 
 .post-detail-header {
@@ -22,6 +30,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 .post-detail-avatar {
@@ -130,4 +141,29 @@
   font-size: 12px;
   margin: 0;
   text-align: center;
+}
+
+/* ── Botón de cerrar modal ── */
+.post-detail-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: auto; /* Empuja el botón a la derecha */
+  transition: background 0.2s, transform 0.1s;
+}
+
+.post-detail-close:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.post-detail-close:active {
+  transform: scale(0.9);
 }

@@ -1,5 +1,6 @@
 /* ════════════════════════════════════════════════════
    habitual.css  –  tokens y estilos COMPARTIDOS
+   Sistema responsive: Mobile → Tablet → Desktop
    ════════════════════════════════════════════════════ */
 
 /* ── Tokens ─────────────────────────────────────────────── */
@@ -12,10 +13,7 @@
   --hb-green-lt:  #a8c8a4;
   --hb-text:      #3a2a1a;
   --hb-placeholder: #7ea87a;
-  
-  /* Variable específica para el fondo de las tarjetas y modales. 
-     Por defecto es blanco, pero cambiará en el modo oscuro. */
-  --hb-bg-card:   #ffffff; 
+  --hb-bg-card:   #ffffff;
 
   --hb-radius-card:  18px;
   --hb-radius-btn:   50px;
@@ -24,17 +22,28 @@
 
   --hb-font-title: 'DM Serif Display', serif;
   --hb-font-body: 'DM Sans', sans-serif;
+
+  /* Layout tokens responsive */
+  --hb-sidebar-width:    240px;
+  --hb-sidebar-right-w: 280px;
+  --hb-content-max:     680px;
+  --hb-nav-height:      64px; /* altura nav móvil */
 }
 
 /* ── Reset y Reglas Globales ────────────────────────────── */
-*, *::before, *::after { 
-  box-sizing: border-box; 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   font-family: var(--hb-font-body);
   color: var(--hb-text);
+  background: var(--hb-bg);
 }
 
 button, input, textarea, select {
@@ -47,6 +56,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
+/* ── Root container ────────────────────────────────────── */
 #root {
   width: 100% !important;
   border-inline: none !important;
@@ -57,7 +67,11 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
 }
 
-/* ── Pantalla base ──────────────────────────────────────── */
+/* ════════════════════════════════════════════════════
+   LAYOUT PRINCIPAL RESPONSIVE
+   ════════════════════════════════════════════════════ */
+
+/* ── Pantalla base (Mobile first) ─────────────────────── */
 .hb-screen {
   width: 100%;
   max-width: 430px;
@@ -69,7 +83,35 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--hb-bg);
 }
 
-/* ── Título ─────────────────────────────────────────────── */
+/* ── App Shell (Layout de 2-3 columnas en tablet/desktop) ─ 
+   Añade esta clase al contenedor principal de la app
+   cuando el usuario está autenticado (tiene nav) ─── */
+.hb-app-shell {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  background: var(--hb-bg);
+}
+
+/* ── Área de contenido principal ── */
+.hb-main-content {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: calc(var(--hb-nav-height) + 16px); /* espacio para nav móvil */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Columna derecha opcional (widgets, sugerencias) ── */
+.hb-sidebar-right {
+  display: none; /* Oculta en móvil */
+}
+
+/* ════════════════════════════════════════════════════
+   TÍTULOS Y TIPOGRAFÍA
+   ════════════════════════════════════════════════════ */
+
 .hb-title {
   font-family: var(--hb-font-title);
   font-size: 42px;
@@ -80,7 +122,6 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center;
 }
 
-/* ── Subtítulo ──────────────────────────────────────────── */
 .hb-subtitle {
   font-family: var(--hb-font-body);
   font-size: 18px;
@@ -98,7 +139,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 10px;
 }
 
-/* ── Botones ────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════
+   BOTONES
+   ════════════════════════════════════════════════════ */
+
 .hb-actions {
   width: 100%;
   display: flex;
@@ -126,7 +170,10 @@ h1, h2, h3, h4, h5, h6 {
 .hb-btn--secondary { background: var(--hb-green-lt); color: var(--hb-brown); }
 .hb-btn--secondary:hover { opacity: 0.8; }
 
-/* ── Formulario ─────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════
+   FORMULARIOS
+   ════════════════════════════════════════════════════ */
+
 .hb-form {
   width: 100%;
   display: flex;
@@ -191,7 +238,14 @@ h1, h2, h3, h4, h5, h6 {
   object-fit: contain;
 }
 
-/* ── Nav inferior (compartido por todas las pantallas) ──── */
+/* ════════════════════════════════════════════════════
+   NAVEGACIÓN — SISTEMA ADAPTATIVO
+   Mobile: barra inferior fija
+   Tablet: barra lateral izquierda compacta (solo iconos)
+   Desktop: barra lateral izquierda completa (iconos + texto)
+   ════════════════════════════════════════════════════ */
+
+/* ── Nav Mobile (barra inferior) ── */
 .inicio-nav {
   position: fixed;
   bottom: 0;
@@ -205,6 +259,8 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding: 10px 0 14px;
   z-index: 100;
+  /* Transición para cambios de layout */
+  transition: all 0.3s ease;
 }
 
 .inicio-nav-item {
@@ -221,15 +277,16 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0 8px;
   transition: color 0.2s, filter 0.2s;
 }
-.nav-icon { 
-  width: 20px; 
-  height: 20px; 
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   transition: filter 0.2s;
 }
-.inicio-nav-item--active .nav-icon {
-}
+
 .inicio-nav-item span:first-child { font-size: 20px; }
+
 .inicio-nav-item--active {
   color: #fff;
   font-weight: 600;
@@ -238,46 +295,66 @@ h1, h2, h3, h4, h5, h6 {
 }
 .inicio-nav-item:hover { color: #fff; }
 
-/* ── Responsive ─────────────────────────────────────────── */
-@media (min-width: 600px) {
-  .hb-screen {
-    padding-top: 64px;
-    margin: 0 auto;
-    border-inline: 1px solid rgba(74,44,26,0.1);
-    min-height: 100svh;
-  }
+/* ── Label de nav (oculto en móvil cuando se hace sidebar) ── */
+.nav-label { display: inline; }
+
+/* ════════════════════════════════════════════════════
+   MODALES Y OVERLAYS
+   ════════════════════════════════════════════════════ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.post-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+  backdrop-filter: blur(2px);
 }
 
 /* ════════════════════════════════════════════════════
-   MODO OSCURO Y ACCESIBILIDAD (GLOBAL)
+   MODO OSCURO
    ════════════════════════════════════════════════════ */
 
-/* LÓGICA DEL MODO OSCURO:
-   En lugar de crear un archivo CSS nuevo, cuando el usuario activa 
-   el interruptor en React, le añado la clase '.dark-mode' al <body> del HTML.
-   Al hacer esto, reescribo el valor de mis variables originales. 
-   Toda la app se vuelve oscura automáticamente porque usa estas variables.
-*/
 body.dark-mode {
   --hb-bg:          #1a1a1a;
-  --hb-brown:       #e6d5c3; 
+  --hb-brown:       #e6d5c3;
   --hb-brown-mid:   #bda896;
-  --hb-text:        #f0f0f0; 
-  --hb-green-lt:    #2d3a2c; 
+  --hb-text:        #f0f0f0;
+  --hb-green-lt:    #2d3a2c;
   --hb-green:       #5d8559;
-  --hb-bg-card:     #242424; /* Las tarjetas blancas pasan a gris oscuro */
+  --hb-bg-card:     #242424;
 }
-/* Aseguro que el contenedor principal de React adopte el nuevo fondo */
+
 body.dark-mode .hb-screen,
-body.dark-mode #root {
+body.dark-mode #root,
+body.dark-mode .hb-app-shell,
+body.dark-mode .hb-main-content,
+body.dark-mode .hb-sidebar-right {
   background: var(--hb-bg);
 }
 
-/* LÓGICA DEL TEXTO GRANDE:
-   Igual que el modo oscuro. Si el body tiene la clase '.texto-grande', 
-   fuerzo un aumento de tamaño en las etiquetas principales usando !important 
-   para sobrescribir los estilos de las otras pantallas sin romper su estructura.
-*/
+body.dark-mode .inicio-nav {
+  background: var(--hb-green);
+}
+
+/* ════════════════════════════════════════════════════
+   TEXTO GRANDE
+   ════════════════════════════════════════════════════ */
+
 body.texto-grande p,
 body.texto-grande span,
 body.texto-grande label,
@@ -286,12 +363,12 @@ body.texto-grande input {
   font-size: 18px !important;
 }
 
-body.texto-grande h1, 
+body.texto-grande h1,
 body.texto-grande .hb-title {
   font-size: 48px !important;
 }
 
-body.texto-grande h2, 
+body.texto-grande h2,
 body.texto-grande h3,
 body.texto-grande .hb-subtitle {
   font-size: 24px !important;
@@ -306,51 +383,14 @@ body.texto-grande .inicio-nav-item span:first-child {
   font-size: 26px !important;
 }
 
-/* LÓGICA DEL ALTO CONTRASTE:
-   Modo de alto contraste que mantiene la paleta de colores de la app pero aumenta el contraste
-   para mejor accesibilidad, sin ser tan drástico como negro puro/blanco puro.
-*/
-body.alto-contraste {
-  --hb-bg:          #b8a898; /* Beige aún más oscuro para mayor contraste */
-  --hb-brown:       #1a0f0a; /* Marrón muy oscuro */
-  --hb-brown-mid:   #3a2012; /* Marrón medio más intenso */
-  --hb-text:        #0a0503; /* Texto casi negro para máximo contraste */
-  --hb-green:       #2a8a2a; /* Verde más saturado */
-  --hb-green-dk:    #1a6a1a; /* Verde oscuro más intenso */
-  --hb-green-lt:    #d8e8d8; /* Verde claro más visible */
-  --hb-bg-card:     #faf4ec; /* Fondo de tarjetas más claro para contraste */
-  --hb-placeholder: #2a8a2a; /* Placeholder en verde para contraste */
-}
-/* Aseguro que el contenedor principal adopte el nuevo fondo */
-body.alto-contraste .hb-screen,
-body.alto-contraste #root {
-  background: var(--hb-bg);
-}
-/* Mejorar el contraste de los botones sin bordes */
-body.alto-contraste .hb-btn--primary {
-  background: var(--hb-green) !important;
-  color: #ffffff !important;
-}
-body.alto-contraste .hb-btn--secondary {
-  background: var(--hb-bg-card) !important;
-  color: var(--hb-text) !important;
-}
-
-/* Posts en modo texto grande - Una columna */
 body.texto-grande .inicio-fila {
   flex-direction: column !important;
 }
 
-body.texto-grande .inicio-post {
-  width: 100% !important;
-  flex: none !important;
-}
-
-body.texto-grande .inicio-post--texto {
-  flex: none !important;
-}
-
+body.texto-grande .inicio-post,
+body.texto-grande .inicio-post--texto,
 body.texto-grande .inicio-post--audio {
+  width: 100% !important;
   flex: none !important;
 }
 
@@ -359,32 +399,261 @@ body.texto-grande .perfil-galeria {
 }
 
 /* ════════════════════════════════════════════════════
-   ESTILOS COMPARTIDOS (Modales, Posts, Likes, Galerías)
+   ALTO CONTRASTE
    ════════════════════════════════════════════════════ */
 
-/* ── Modal Overlay para Posts ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 100;
-  animation: fadeIn 0.18s ease;
-}
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-
-.post-overlay {
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 20px;
-  backdrop-filter: blur(2px);
+body.alto-contraste {
+  --hb-bg:          #b8a898;
+  --hb-brown:       #1a0f0a;
+  --hb-brown-mid:   #3a2012;
+  --hb-text:        #0a0503;
+  --hb-green:       #2a8a2a;
+  --hb-green-dk:    #1a6a1a;
+  --hb-green-lt:    #d8e8d8;
+  --hb-bg-card:     #faf4ec;
+  --hb-placeholder: #2a8a2a;
 }
 
-/* ── Post Detail Card, Galería de Posts y Botones de Like ──
-   → Estilos movidos a: post-detail-shared.css, post-shared.css
-   ── */
+body.alto-contraste .hb-screen,
+body.alto-contraste #root {
+  background: var(--hb-bg);
+}
+
+body.alto-contraste .hb-btn--primary {
+  background: var(--hb-green) !important;
+  color: #ffffff !important;
+}
+
+body.alto-contraste .hb-btn--secondary {
+  background: var(--hb-bg-card) !important;
+  color: var(--hb-text) !important;
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≥ 600px)
+   Nav: barra lateral izquierda de iconos (64px)
+   Contenido: columna central + más espacio
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 600px) {
+
+  /* Pantalla de bienvenida / auth */
+  .hb-screen {
+    max-width: 480px;
+    padding-top: 64px;
+    margin: 0 auto;
+    border-inline: 1px solid rgba(74,44,26,0.1);
+    min-height: 100svh;
+  }
+
+  /* App shell pasa a horizontal */
+  .hb-app-shell {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  /* Nav se convierte en sidebar izquierda */
+  .inicio-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: none;
+    width: 64px;
+    max-width: 64px;
+    height: 100svh;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 24px 0 24px;
+    gap: 8px;
+    border-radius: 0 20px 20px 0;
+    box-shadow: 2px 0 12px rgba(74,44,26,0.1);
+  }
+
+  .inicio-nav-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0; /* Oculta el texto */
+  }
+
+  /* Ocultar labels en sidebar compacta */
+  .nav-label {
+    display: none;
+  }
+
+  .inicio-nav-item--active {
+    background: rgba(255,255,255,0.2);
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .inicio-nav-item span:first-child {
+    font-size: 22px !important;
+  }
+
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Contenido principal tiene margen izquierdo para el sidebar */
+  .hb-main-content {
+    margin-left: 64px;
+    padding-bottom: 24px;
+    width: 100%;
+  }
+
+  /* Modales se centran en pantalla */
+  .modal-overlay {
+    align-items: center;
+  }
+
+  /* Logo nav en sidebar (si existe) */
+  .inicio-nav .hb-logo {
+    width: 36px;
+    margin-bottom: 16px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP MEDIO (≥ 900px)
+   Nav sidebar ancha con iconos + texto
+   Contenido central con ancho cómodo
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* Sidebar izquierda completa */
+  .inicio-nav {
+    width: var(--hb-sidebar-width);
+    max-width: var(--hb-sidebar-width);
+    padding: 28px 16px 28px;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .inicio-nav-item {
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    padding: 12px 16px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    font-size: 15px;
+  }
+
+  .nav-label {
+    display: inline;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .inicio-nav-item--active .nav-label {
+    font-weight: 700;
+  }
+
+  .inicio-nav-item span:first-child {
+    font-size: 20px !important;
+  }
+
+  /* Contenido con margen para sidebar ancha */
+  .hb-main-content {
+    margin-left: var(--hb-sidebar-width);
+    max-width: calc(var(--hb-content-max) + 48px);
+    padding: 0 24px 32px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP GRANDE (≥ 1200px)
+   Layout 3 columnas: sidebar | contenido | widgets
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 1200px) {
+
+  #root {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .hb-app-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Sidebar izquierda más espaciosa */
+  .inicio-nav {
+    width: calc(var(--hb-sidebar-width) + 20px);
+    max-width: calc(var(--hb-sidebar-width) + 20px);
+    padding: 32px 20px;
+  }
+
+  /* Contenido central */
+  .hb-main-content {
+    margin-left: calc(var(--hb-sidebar-width) + 20px);
+    max-width: var(--hb-content-max);
+    flex: 1;
+    padding: 0 24px 32px;
+  }
+
+  /* Sidebar derecha visible (sugerencias, trending, etc.) */
+  .hb-sidebar-right {
+    display: flex;
+    flex-direction: column;
+    width: var(--hb-sidebar-right-w);
+    flex-shrink: 0;
+    padding: 28px 20px 28px 0;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .hb-sidebar-right::-webkit-scrollbar { display: none; }
+
+  /* Widget card en sidebar derecha */
+  .hb-widget-card {
+    background: var(--hb-bg-card);
+    border-radius: var(--hb-radius-card);
+    padding: 16px;
+    border: 1px solid rgba(74,44,26,0.08);
+  }
+
+  .hb-widget-title {
+    font-family: var(--hb-font-body);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--hb-text);
+    margin: 0 0 12px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP XL (≥ 1600px)
+   Más respiración, sidebar más ancha
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 1600px) {
+  :root {
+    --hb-sidebar-width: 280px;
+    --hb-sidebar-right-w: 320px;
+    --hb-content-max: 740px;
+  }
+
+  .inicio-nav-item {
+    padding: 14px 20px;
+  }
+
+  .nav-label {
+    font-size: 16px;
+  }
+}

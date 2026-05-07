@@ -28,6 +28,7 @@ export default function CommunityPostDetailModal({
           >
             {post.username}
           </button>
+          <button className="post-detail-close" onClick={onClose}>✕</button>
         </div>
         {post.media_url && post.media_type === 'image' ? (
           <img

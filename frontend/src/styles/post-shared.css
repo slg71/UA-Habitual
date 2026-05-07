@@ -1,16 +1,22 @@
 /* ════════════════════════════════════════════════════
    post-shared.css  –  Estilos COMPARTIDOS para posts
    Usado por PostCard, ProfilePostCard, CommunityPostCard, ExplorePostCard
+   Sistema responsive: Mobile → Tablet → Desktop
    ════════════════════════════════════════════════════ */
 
-/* ── Galería de Posts en Columnas ── */
+/* ════════════════════════════════════════════════════
+   GALERÍA DE POSTS (Columnas masonry)
+   Base: 2 columnas en móvil
+   ════════════════════════════════════════════════════ */
+
 .perfil-galeria {
   columns: 2;
   column-gap: 12px;
-  padding: 0 20px 80px;
+  padding: 0 16px 80px;
   width: 100%;
 }
 
+/* ── Tarjeta de Post ── */
 .perfil-post {
   break-inside: avoid;
   margin-bottom: 12px;
@@ -21,10 +27,20 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.perfil-post:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(74,44,26,0.12);
+}
+
+.perfil-post:active {
+  transform: translateY(0);
 }
 
 .perfil-post--sin-img {
-  min-height: 0px;
+  min-height: 0;
 }
 
 .perfil-post img {
@@ -32,19 +48,28 @@
   max-height: 280px;
   object-fit: cover;
   display: block;
+  transition: transform 0.3s ease;
 }
 
+.perfil-post:hover img {
+  transform: scale(1.02);
+}
+
+/* ── Footer de post mini ── */
 .post-footer-mini {
   padding: 10px;
   background: var(--hb-bg);
+  flex: 1;
 }
 
 .post-footer-mini p {
   font-size: 11px;
   margin: 0 0 6px;
   color: var(--hb-text);
+  line-height: 1.4;
 }
 
+/* ── Meta información del post ── */
 .post-meta {
   display: flex;
   justify-content: space-between;
@@ -54,6 +79,7 @@
   gap: 8px;
 }
 
+/* ── Autor del post ── */
 .post-autor {
   background: none;
   border: none;
@@ -62,6 +88,7 @@
   font-weight: 600;
   font-size: 11px;
   cursor: default;
+  font-family: var(--hb-font-body);
 }
 
 .post-autor--clickable {
@@ -71,20 +98,51 @@
 }
 .post-autor--clickable:hover {
   opacity: 0.8;
+  text-decoration: underline;
 }
 
-/* ── Botón de Like ── */
+/* ════════════════════════════════════════════════════
+   BOTONES DE LIKE
+   ════════════════════════════════════════════════════ */
+
 .like-btn {
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
   color: var(--hb-brown-mid);
-  transition: transform 0.15s;
+  transition: transform 0.15s, color 0.15s;
   padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.like-btn:active { transform: scale(1.2); }
-.like-btn.liked { color: #ff6b6b; }
+
+.like-btn:hover {
+  transform: scale(1.15);
+  color: #ff6b6b;
+}
+
+.like-btn:active {
+  transform: scale(1.25);
+}
+
+.like-btn.liked {
+  color: #ff6b6b;
+}
+
+/* Animación de like */
+@keyframes likePopIn {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4); }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.like-btn.liked {
+  animation: likePopIn 0.35s ease forwards;
+}
 
 .like-btn--lg {
   font-size: 26px;
@@ -94,4 +152,172 @@
   font-size: 16px;
   color: var(--hb-brown-mid);
   font-weight: 700;
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≥ 600px)
+   Galería de 2 columnas con más respiro
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 600px) {
+
+  .perfil-galeria {
+    columns: 2;
+    column-gap: 14px;
+    padding: 0 20px 32px;
+  }
+
+  .perfil-post {
+    border-radius: 18px;
+    margin-bottom: 14px;
+  }
+
+  .post-footer-mini {
+    padding: 12px;
+  }
+
+  .post-footer-mini p {
+    font-size: 12px;
+  }
+
+  .post-meta {
+    font-size: 11px;
+  }
+
+  .post-autor {
+    font-size: 12px;
+  }
+
+  .perfil-post img {
+    max-height: 320px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP MEDIO (≥ 900px)
+   3 columnas en galería, posts más refinados
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  .perfil-galeria {
+    columns: 3;
+    column-gap: 14px;
+    padding: 0 0 32px;
+  }
+
+  .perfil-post {
+    border-radius: 20px;
+    margin-bottom: 14px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(74,44,26,0.07);
+  }
+
+  .perfil-post:hover {
+    box-shadow: 0 10px 32px rgba(74,44,26,0.14);
+    transform: translateY(-4px);
+  }
+
+  .post-footer-mini {
+    padding: 12px 14px;
+  }
+
+  .post-footer-mini p {
+    font-size: 12.5px;
+    margin-bottom: 8px;
+  }
+
+  .post-meta {
+    font-size: 11.5px;
+  }
+
+  .post-autor {
+    font-size: 12.5px;
+  }
+
+  .like-btn {
+    font-size: 22px;
+  }
+
+  .like-count {
+    font-size: 17px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP GRANDE (≥ 1200px)
+   Galería de 3 columnas dentro del contenido central
+   Las tarjetas tienen más contenido visible
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 1200px) {
+
+  .perfil-galeria {
+    columns: 3;
+    column-gap: 16px;
+    padding: 0 0 40px;
+  }
+
+  .perfil-post {
+    margin-bottom: 16px;
+    box-shadow: 0 2px 16px rgba(74,44,26,0.08);
+  }
+
+  .perfil-post img {
+    max-height: 360px;
+  }
+
+  .post-footer-mini {
+    padding: 14px 16px;
+  }
+
+  .post-footer-mini p {
+    font-size: 13px;
+    margin-bottom: 10px;
+    line-height: 1.45;
+  }
+
+  .post-meta {
+    font-size: 12px;
+  }
+
+  .post-autor {
+    font-size: 13px;
+  }
+
+  .like-btn {
+    font-size: 23px;
+  }
+
+  .like-btn--lg {
+    font-size: 28px;
+  }
+
+  .like-count {
+    font-size: 18px;
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — DESKTOP XL (≥ 1600px)
+   ════════════════════════════════════════════════════ */
+
+@media (min-width: 1600px) {
+
+  .perfil-galeria {
+    column-gap: 18px;
+  }
+
+  .perfil-post {
+    border-radius: 22px;
+    margin-bottom: 18px;
+  }
+
+  .post-footer-mini {
+    padding: 16px 18px;
+  }
+
+  .post-footer-mini p {
+    font-size: 14px;
+  }
 }

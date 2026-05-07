@@ -37,6 +37,7 @@ export default function ProfilePostDetailModal({
           ) : (
             <span className="post-detail-username">{post.username || currentUsername}</span>
           )}
+          <button className="post-detail-close" onClick={onClose}>✕</button>
         </div>
 
         {post.media_url && post.media_type === 'image' && <img src={parseUrl(post.media_url)} alt="Contenido" className="post-detail-img" />}

@@ -3,7 +3,7 @@
    Usado por CommentsSection.jsx en todos los modales de posts
    ════════════════════════════════════════════════════ */
 
-.comments-section {
+.comments-section-body {
   border-top: 1.5px solid var(--hb-green-lt);
   padding: 18px 16px 16px;
 }
@@ -47,8 +47,6 @@
   flex-direction: column;
   gap: 0;
   margin-bottom: 16px;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
 .comment-item {
@@ -187,4 +185,14 @@
   color: #c0392b;
   margin: 6px 0 0;
   font-weight: 600;
+}
+
+.comment-form-wrapper {
+  position: sticky;
+  bottom: 0;
+  background: var(--hb-bg); /* El mismo fondo de la tarjeta para tapar comentarios al scrollear */
+  padding: 12px 16px;
+  z-index: 20;
+  box-shadow: 0 -8px 20px rgba(0,0,0,0.04); /* Sombra elegante */
+  border-radius: 0 0 20px 20px;
 }
