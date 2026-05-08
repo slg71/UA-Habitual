@@ -5,13 +5,15 @@ const {
     getGoalById,
     updateGoal,
     completeGoal,
-    deleteGoal
+    deleteGoal,
+    getUserLevelProgress
 } = require('../controllers/goalsController');
 const verifyToken = require('../middleware/verifyToken');
 
 const router = express.Router();
 
 router.get('/goals', verifyToken, getUserGoals);
+router.get('/goals/user/level-progress', verifyToken, getUserLevelProgress);
 router.get('/goals/:id', verifyToken, getGoalById);
 
 router.post('/goals', verifyToken, createGoal);
