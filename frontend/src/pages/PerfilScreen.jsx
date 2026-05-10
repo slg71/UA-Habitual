@@ -5,6 +5,7 @@ import BottomNav from '../components/common/BottomNav';
 import ProfilePostCard from '../components/ProfilePostCard';
 import ProfilePostDetailModal from '../components/ProfilePostDetailModal';
 import ProfileProgressModal from '../components/ProfileProgressModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { API_BASE, getAuthHeaders } from '../utils/api';
 import { getStoredToken, getUserIdFromToken } from '../utils/auth';
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache';
@@ -40,6 +41,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [bannerFailed, setBannerFailed] = useState(false);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [showConfirmSaveGoal, setShowConfirmSaveGoal] = useState(false);
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
@@ -448,11 +450,15 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     cargarPostsLikeados();
   }, [tabActual, token]);
 
-  const btnGuardarObjetivo = async () => {
+  const btnGuardarObjetivo = () => {
     if (!nuevoObjetivo.title.trim() || !nuevoObjetivo.community_id) {
       setErrorObj('Completa el título y selecciona una comunidad.');
       return;
     }
+    setShowConfirmSaveGoal(true);
+  };
+
+  const confirmarGuardarObjetivo = async () => {
     setIsSaving(true);
     setErrorObj('');
     try {
@@ -472,6 +478,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     } finally {
       setIsSaving(false);
     }
+    setShowConfirmSaveGoal(false);
   };
 
   const actualizarNuevoObjetivo = (cambios) => {
@@ -660,6 +667,17 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           onCompleteGoal={completarObjetivo}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={showConfirmSaveGoal}
+        title="Confirmar objetivo"
+        message="¿Estás seguro de que quieres guardar este objetivo? Una vez guardado, no podrás eliminarlo hasta dentro de una semana."
+        confirmText="Sí, guardar"
+        cancelText="Cancelar"
+        onConfirm={confirmarGuardarObjetivo}
+        onCancel={() => setShowConfirmSaveGoal(false)}
+        isLoading={isSaving}
+      />
 
       <BottomNav active={esPerfilPropio ? 'perfil' : ''} onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />
     </div>
