@@ -42,6 +42,8 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const [isDeletingPost, setIsDeletingPost] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [showConfirmSaveGoal, setShowConfirmSaveGoal] = useState(false);
+  const [pendingGoalToComplete, setPendingGoalToComplete] = useState(null);
+  const [isCompletingGoal, setIsCompletingGoal] = useState(false);
 
   const token = getStoredToken();
   const misHeaders = getAuthHeaders(token);
@@ -65,6 +67,20 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
   const formatearFecha = (iso) => {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  const LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700];
+
+  const calcularProgresoNivel = (score = 0) => {
+    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+      if (score >= LEVEL_THRESHOLDS[i]) {
+        if (i === LEVEL_THRESHOLDS.length - 1) return 100;
+        const current = LEVEL_THRESHOLDS[i];
+        const next = LEVEL_THRESHOLDS[i + 1];
+        return Math.round(((score - current) / (next - current)) * 100);
+      }
+    }
+    return 0;
   };
 
   const calcularRachaDesdePost = (posts) => {
@@ -485,10 +501,33 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     setNuevoObjetivo(prev => ({ ...prev, ...cambios }));
   };
 
-  const completarObjetivo = async (objetivo) => {
+  const confirmarCompletarObjetivo = (objetivo) => {
     if (objetivo.status === 'completed') return;
-    await fetch(`${API_BASE}/goals/${objetivo.id}/complete`, { method: 'PATCH', headers: misHeaders });
-    setObjetivos(prev => prev.map(o => o.id === objetivo.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
+    setPendingGoalToComplete(objetivo);
+  };
+
+  const completarObjetivo = async () => {
+    if (!pendingGoalToComplete) return;
+    setIsCompletingGoal(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/goals/${pendingGoalToComplete.id}/complete`, {
+        method: 'PATCH',
+        headers: misHeaders
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al marcar el objetivo como completado');
+      }
+
+      setObjetivos(prev => prev.map(o => o.id === pendingGoalToComplete.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
+      setPendingGoalToComplete(null);
+    } catch (err) {
+      console.error('Error completando objetivo:', err);
+    } finally {
+      setIsCompletingGoal(false);
+    }
   };
 
   const añoActual = fechaCal.getFullYear();
@@ -513,7 +552,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
     return 'racha-unico';
   };
 
-  const miProgreso = user?.score ? Math.min(100, user.score % 100) : 0;
+  const miProgreso = calcularProgresoNivel(user?.score || 0);
   const mostrarLikes = esPerfilPropio && tabActual === 'likes';
   const misPostsParaMostrar = mostrarLikes ? postsLikes : postsPropios;
   const isCargandoPosts = mostrarLikes ? loadingLikes : loading;
@@ -523,7 +562,11 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
       {esPerfilPropio && (
         <button className="perfil-nivel-badge" onClick={() => setShowProgreso(true)}>
-          <span className="nivel-numero">{user?.rank_id || 1}</span>
+          <div className="badge-pulse" />
+          <div className="medal-circle">
+            <span className="nivel-num">{user?.rank_id || 1}</span>
+          </div>
+          <span className="nivel-lbl">Objetivos</span>
         </button>
       )}
 
@@ -664,7 +707,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           error={errorObj}
           communities={comunidades}
           goals={objetivos}
-          onCompleteGoal={completarObjetivo}
+          onCompleteGoal={confirmarCompletarObjetivo}
         />
       )}
 
@@ -677,6 +720,18 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         onConfirm={confirmarGuardarObjetivo}
         onCancel={() => setShowConfirmSaveGoal(false)}
         isLoading={isSaving}
+      />
+
+      <ConfirmationModal
+        isOpen={!!pendingGoalToComplete}
+        title="Seguro que has completado este objetivo?"
+        message={pendingGoalToComplete ? `¿Seguro que has completado "${pendingGoalToComplete.title}"?` : ''}
+        confirmText="Sí, completado"
+        cancelText="No"
+        onConfirm={completarObjetivo}
+        onCancel={() => setPendingGoalToComplete(null)}
+        isLoading={isCompletingGoal}
+        variant="danger"
       />
 
       <BottomNav active={esPerfilPropio ? 'perfil' : ''} onInicio={onInicio} onExplorar={onExplorar} onPerfil={onPerfil} onCrear={onCrear} />

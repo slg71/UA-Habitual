@@ -53,23 +53,33 @@ const createGoal = (req, res) => {
     return res.status(400).json({ error: 'Dificultad inválida. Usa: easy, medium o hard' });
   }
 
-  const points = POINTS_BY_DIFFICULTY[difficulty];
-
-  const query = `
-    INSERT INTO goals (user_id, community_id, title, description, difficulty, status)
-    VALUES (?, ?, ?, ?, ?, 'pending')
-  `;
-
-  db.execute(query, [userId, community_id, title, description || null, difficulty], (err, result) => {
+  const queryCommunity = 'SELECT 1 FROM communities WHERE id = ?';
+  db.execute(queryCommunity, [community_id], (err, communityRows) => {
     if (err) {
-      console.error('Error al crear objetivo:', {
-        error: err,
-        body: req.body,
-        userId
-      });
-      return res.status(500).json({ error: err.message || 'Error al crear objetivo' });
+      console.error('Error al validar comunidad:', err);
+      return res.status(500).json({ error: 'Error interno al validar comunidad' });
     }
-    return res.status(201).json({ message: 'Objetivo creado', goalId: result.insertId });
+
+    if (!communityRows.length) {
+      return res.status(400).json({ error: 'La comunidad indicada no existe' });
+    }
+
+    const query = `
+      INSERT INTO goals (user_id, community_id, title, description, difficulty, status, completed_at)
+      VALUES (?, ?, ?, ?, ?, 'pending', NULL)
+    `;
+
+    db.execute(query, [userId, community_id, title, description || null, difficulty], (err, result) => {
+      if (err) {
+        console.error('Error al crear objetivo:', {
+          error: err,
+          body: req.body,
+          userId
+        });
+        return res.status(500).json({ error: err.message || 'Error al crear objetivo' });
+      }
+      return res.status(201).json({ message: 'Objetivo creado', goalId: result.insertId });
+    });
   });
 };
 
@@ -80,7 +90,11 @@ const getUserGoals = (req, res) => {
 
   let query = `
     SELECT 
-      g.id, g.title, g.description, g.difficulty, g.status,
+      g.id,
+      g.title,
+      g.description,
+      g.difficulty,
+      g.status,
       CASE g.difficulty
         WHEN 'easy' THEN ?
         WHEN 'medium' THEN ?
@@ -88,11 +102,13 @@ const getUserGoals = (req, res) => {
         ELSE 0
       END AS points,
       g.created_at,
-      c.id as community_id, c.name as community_name
+      g.completed_at,
+      c.id AS community_id,
+      c.name AS community_name
     FROM goals g
     JOIN communities c ON c.id = g.community_id
     WHERE g.user_id = ?
-    AND g.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      AND g.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
   `;
 
   const params = [
@@ -110,7 +126,10 @@ const getUserGoals = (req, res) => {
   query += ' ORDER BY g.created_at DESC';
 
   db.execute(query, params, (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Error al cargar objetivos' });
+    if (err) {
+      console.error('Error al cargar objetivos:', err);
+      return res.status(500).json({ error: 'Error al cargar objetivos' });
+    }
     return res.json(rows);
   });
 };
@@ -122,7 +141,11 @@ const getGoalById = (req, res) => {
 
   const query = `
     SELECT 
-      g.id, g.title, g.description, g.difficulty, g.status,
+      g.id,
+      g.title,
+      g.description,
+      g.difficulty,
+      g.status,
       CASE g.difficulty
         WHEN 'easy' THEN ?
         WHEN 'medium' THEN ?
@@ -130,7 +153,9 @@ const getGoalById = (req, res) => {
         ELSE 0
       END AS points,
       g.created_at,
-      c.id as community_id, c.name as community_name
+      g.completed_at,
+      c.id AS community_id,
+      c.name AS community_name
     FROM goals g
     JOIN communities c ON c.id = g.community_id
     WHERE g.id = ? AND g.user_id = ?
@@ -143,7 +168,10 @@ const getGoalById = (req, res) => {
     id,
     userId
   ], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Error al cargar objetivo' });
+    if (err) {
+      console.error('Error al obtener objetivo por id:', err);
+      return res.status(500).json({ error: 'Error al cargar objetivo' });
+    }
     if (!rows.length) return res.status(404).json({ error: 'Objetivo no encontrado' });
     return res.json(rows[0]);
   });
@@ -200,12 +228,16 @@ const completeGoal = (req, res) => {
     const points = POINTS_BY_DIFFICULTY[rows[0].difficulty] || 0;
 
     const updateGoalQuery = `
-      UPDATE goals SET status = 'completed'
-      WHERE id = ? AND user_id = ?
+      UPDATE goals
+      SET status = 'completed', completed_at = NOW()
+      WHERE id = ? AND user_id = ? AND status = 'pending'
     `;
 
-    db.execute(updateGoalQuery, [id, userId], (err) => {
+    db.execute(updateGoalQuery, [id, userId], (err, result) => {
       if (err) return res.status(500).json({ error: 'Error al completar objetivo' });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Objetivo no encontrado o ya completado' });
+      }
 
       const updateUserQuery = `UPDATE users SET score = score + ? WHERE id = ?`;
       db.execute(updateUserQuery, [points, userId], (err) => {
