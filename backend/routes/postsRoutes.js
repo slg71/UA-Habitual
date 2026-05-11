@@ -19,7 +19,7 @@ router.get('/posts/feed/following', verifyToken, getFollowingPosts);
 router.get('/posts/:id', getPostById);
 router.get('/community/:community_id/posts', getPostsByCommunity);
 
-router.post('/posts', verifyToken, uploadPostMedia.single('media'), createPost);
+router.post('/posts', verifyToken, uploadPostMedia.array('media', 10), createPost);
 
 router.delete('/posts/:id', verifyToken, deletePost);
 

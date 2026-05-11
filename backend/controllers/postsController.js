@@ -1,17 +1,9 @@
 const db = require('../config/db');
 
-const createPost = (req, res) => {
+const createPost = async (req, res) => {
     const { content, community_id } = req.body || {};
     const userId = req.user.id;
-    const mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : null;
-    const mediaType = req.file ? (req.file.mimetype.startsWith('image/') ? 'image' : req.file.mimetype.startsWith('video/') ? 'video' : req.file.mimetype.startsWith('audio/') ? 'audio' : 'other') : null;
-    const mediaMetadata = req.file
-        ? JSON.stringify({
-            mime_type: req.file.mimetype,
-            original_name: req.file.originalname,
-            size: req.file.size
-        })
-        : null;
+    const files = req.files || [];
 
     if (!content || !community_id) {
         return res.status(400).json({
@@ -19,63 +11,99 @@ const createPost = (req, res) => {
         });
     }
 
-    // Verificar que el usuario está en la comunidad
-    const checkQuery = 'SELECT 1 FROM user_communities WHERE user_id = ? AND community_id = ?';
-    db.execute(checkQuery, [userId, community_id], (err, rows) => {
-        if (err || !rows.length) {
+    try {
+        // Verificar que el usuario está en la comunidad
+        const checkQuery = 'SELECT 1 FROM user_communities WHERE user_id = ? AND community_id = ?';
+        const [checkResult] = await db.promise().execute(checkQuery, [userId, community_id]);
+        
+        if (!checkResult.length) {
             return res.status(403).json({ error: 'No estás unido a esta comunidad' });
         }
 
+        // Crear el post
         const insertPostQuery = 'INSERT INTO posts (user_id, community_id, content) VALUES (?, ?, ?)';
-        db.execute(insertPostQuery, [userId, community_id, content], (err, result) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error al crear post' });
-            }
+        const [postResult] = await db.promise().execute(insertPostQuery, [userId, community_id, content]);
+        const postId = postResult.insertId;
 
-            const postId = result.insertId;
-
-            // Si no hay media, responder directamente
-            if (!mediaUrl) {
-                return res.status(201).json({
-                    message: 'Post creado con éxito',
-                    postId: postId,
-                    media_url: null
-                });
-            }
-
-            // Insertar media si existe
-            const insertMediaQuery = 'INSERT INTO media (type, url, metadata) VALUES (?, ?, ?)';
-            db.execute(insertMediaQuery, [mediaType, mediaUrl, mediaMetadata], (mediaErr, mediaResult) => {
-                if (mediaErr) {
-                    return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
-                }
-
-                // Vincular media al post
-                const linkMediaQuery = 'INSERT INTO post_media (post_id, media_id) VALUES (?, ?)';
-                db.execute(linkMediaQuery, [postId, mediaResult.insertId], (linkErr) => {
-                    if (linkErr) {
-                        return res.status(500).json({ error: 'Error al guardar el contenido multimedia del post' });
-                    }
-
-                    return res.status(201).json({
-                        message: 'Post creado con éxito',
-                        postId: postId,
-                        media_url: mediaUrl
-                    });
-                });
+        // Si no hay archivos, responder directamente
+        if (files.length === 0) {
+            return res.status(201).json({
+                message: 'Post creado con éxito',
+                postId: postId,
+                media_list: []
             });
+        }
+
+        // Procesar todas las medias
+        const mediaPromises = files.map(async (file) => {
+            const mediaUrl = `/uploads/posts/${file.filename}`;
+            const mediaType = file.mimetype.startsWith('image/') ? 'image' : 
+                             file.mimetype.startsWith('video/') ? 'video' : 
+                             file.mimetype.startsWith('audio/') ? 'audio' : 'other';
+            const mediaMetadata = JSON.stringify({
+                mime_type: file.mimetype,
+                original_name: file.originalname,
+                size: file.size
+            });
+
+            // Insertar media
+            const insertMediaQuery = 'INSERT INTO media (type, url, metadata) VALUES (?, ?, ?)';
+            const [mediaResult] = await db.promise().execute(insertMediaQuery, [mediaType, mediaUrl, mediaMetadata]);
+            
+            // Vincular media al post
+            const linkMediaQuery = 'INSERT INTO post_media (post_id, media_id) VALUES (?, ?)';
+            await db.promise().execute(linkMediaQuery, [postId, mediaResult.insertId]);
+
+            return { url: mediaUrl, type: mediaType };
         });
-    });
+
+        const mediaList = await Promise.all(mediaPromises);
+
+        return res.status(201).json({
+            message: 'Post creado con éxito',
+            postId: postId,
+            media_list: mediaList
+        });
+
+    } catch (error) {
+        console.error('Error creando post:', error);
+        return res.status(500).json({ error: 'Error al crear post' });
+    }
 };
 
-const getPostsByCommunity = (req, res) => {
+const promiseDb = db.promise();
+
+const parseMediaList = (row) => {
+    let media_list = [];
+    
+    if (row.media_list) {
+        if (Array.isArray(row.media_list)) {
+            media_list = row.media_list.filter(m => m && m.url);
+        } else if (typeof row.media_list === 'string') {
+            try {
+                media_list = JSON.parse(row.media_list).filter(m => m && m.url);
+            } catch (e) {
+                console.error('Error parsing media_list JSON:', e);
+                media_list = [];
+            }
+        }
+    }
+    
+    return {
+        ...row,
+        media_list,
+        media_url: media_list.length ? media_list[0].url : null,
+        media_type: media_list.length ? media_list[0].type : null
+    };
+};
+
+const getPostsByCommunity = async (req, res) => {
     const { community_id } = req.params;
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
-            MAX(m.url) as media_url,
-            MAX(m.type) as media_type,
+            JSON_ARRAYAGG(JSON_OBJECT('url', m.url, 'type', m.type)) as media_list,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
@@ -89,22 +117,22 @@ const getPostsByCommunity = (req, res) => {
         ORDER BY p.created_at DESC
     `;
 
-    db.execute(query, [community_id], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al cargar posts' });
-        }
-        return res.json(rows);
-    });
+    try {
+        const [rows] = await promiseDb.execute(query, [community_id]);
+        return res.json(rows.map(parseMediaList));
+    } catch (error) {
+        console.error('Error al cargar posts por comunidad:', error);
+        return res.status(500).json({ error: 'Error al cargar posts' });
+    }
 };
 
-const getPostById = (req, res) => {
+const getPostById = async (req, res) => {
     const { id } = req.params;
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
-            MAX(m.url) as media_url,
-            MAX(m.type) as media_type,
+            JSON_ARRAYAGG(JSON_OBJECT('url', m.url, 'type', m.type)) as media_list,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT c.id) as comments_count
         FROM posts p
@@ -117,50 +145,47 @@ const getPostById = (req, res) => {
         GROUP BY p.id, p.user_id, p.community_id, p.content, p.created_at, u.id, u.username, u.score, u.streak
     `;
 
-    db.execute(query, [id], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al cargar post' });
-        }
+    try {
+        const [rows] = await promiseDb.execute(query, [id]);
         if (!rows.length) {
             return res.status(404).json({ error: 'Post no encontrado' });
         }
-        return res.json(rows[0]);
-    });
+        return res.json(parseMediaList(rows[0]));
+    } catch (error) {
+        console.error('Error al cargar post:', error);
+        return res.status(500).json({ error: 'Error al cargar post' });
+    }
 };
 
-const deletePost = (req, res) => {
+const deletePost = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Verificar que el usuario es el propietario
-    const checkQuery = 'SELECT user_id FROM posts WHERE id = ?';
-    db.execute(checkQuery, [id], (err, rows) => {
-        if (err || !rows.length) {
+    try {
+        const [rows] = await promiseDb.execute('SELECT user_id FROM posts WHERE id = ?', [id]);
+        if (!rows.length) {
             return res.status(404).json({ error: 'Post no encontrado' });
         }
         if (rows[0].user_id !== userId) {
             return res.status(403).json({ error: 'No puedes eliminar este post' });
         }
 
-        const query = 'DELETE FROM posts WHERE id = ?';
-        db.execute(query, [id], (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error al eliminar post' });
-            }
-            return res.json({ message: 'Post eliminado' });
-        });
-    });
+        await promiseDb.execute('DELETE FROM posts WHERE id = ?', [id]);
+        return res.json({ message: 'Post eliminado' });
+    } catch (error) {
+        console.error('Error al eliminar post:', error);
+        return res.status(500).json({ error: 'Error al eliminar post' });
+    }
 };
 
-const getPostsForUser = (req, res) => {
+const getPostsForUser = async (req, res) => {
     const userId = req.user.id;
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
-            MAX(m.url) as media_url,
-            MAX(m.type) as media_type,
+            JSON_ARRAYAGG(JSON_OBJECT('url', m.url, 'type', m.type)) as media_list,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
@@ -175,23 +200,23 @@ const getPostsForUser = (req, res) => {
         ORDER BY p.created_at DESC
     `;
 
-    db.execute(query, [userId], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al cargar posts' });
-        }
-        return res.json(rows);
-    });
+    try {
+        const [rows] = await promiseDb.execute(query, [userId]);
+        return res.json(rows.map(parseMediaList));
+    } catch (error) {
+        console.error('Error al cargar posts del usuario:', error);
+        return res.status(500).json({ error: 'Error al cargar posts' });
+    }
 };
 
-const getPostsByUserId = (req, res) => {
+const getPostsByUserId = async (req, res) => {
     const { user_id } = req.params;
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
-            MAX(m.url) as media_url,
-            MAX(m.type) as media_type,
+            JSON_ARRAYAGG(JSON_OBJECT('url', m.url, 'type', m.type)) as media_list,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
@@ -206,23 +231,23 @@ const getPostsByUserId = (req, res) => {
         ORDER BY p.created_at DESC
     `;
 
-    db.execute(query, [user_id], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al cargar posts' });
-        }
-        return res.json(rows);
-    });
+    try {
+        const [rows] = await promiseDb.execute(query, [user_id]);
+        return res.json(rows.map(parseMediaList));
+    } catch (error) {
+        console.error('Error al cargar posts del usuario por ID:', error);
+        return res.status(500).json({ error: 'Error al cargar posts' });
+    }
 };
 
-const getFollowingPosts = (req, res) => {
+const getFollowingPosts = async (req, res) => {
     const userId = req.user.id;
     const query = `
         SELECT 
             p.id, p.user_id, p.community_id, p.content, p.created_at,
             u.id as user_db_id, u.username, u.score, u.streak,
             c.id as community_db_id, c.name as community_name,
-            MAX(m.url) as media_url,
-            MAX(m.type) as media_type,
+            JSON_ARRAYAGG(JSON_OBJECT('url', m.url, 'type', m.type)) as media_list,
             COUNT(DISTINCT pl.user_id) as likes_count,
             COUNT(DISTINCT com.id) as comments_count
         FROM posts p
@@ -239,12 +264,13 @@ const getFollowingPosts = (req, res) => {
         LIMIT 50
     `;
 
-    db.execute(query, [userId], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al cargar posts' });
-        }
-        return res.json(rows);
-    });
+    try {
+        const [rows] = await promiseDb.execute(query, [userId]);
+        return res.json(rows.map(parseMediaList));
+    } catch (error) {
+        console.error('Error al cargar posts de los seguidos:', error);
+        return res.status(500).json({ error: 'Error al cargar posts' });
+    }
 };
 
 module.exports = {

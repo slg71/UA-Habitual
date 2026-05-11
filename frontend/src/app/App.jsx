@@ -35,6 +35,7 @@ export default function App() {
   const [screen, setScreen] = useState(() => getInitialScreen())
   const [perfilVisitadoId, setPerfilVisitadoId] = useState(() => localStorage.getItem(PROFILE_STORAGE_KEY) || null)
   const [refreshPerfilKey, setRefreshPerfilKey] = useState(0)
+  const [refreshFeedKey, setRefreshFeedKey] = useState(0)
   const [comunidadActual, setComunidadActual] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(COMMUNITY_STORAGE_KEY) || 'null')
@@ -90,6 +91,10 @@ export default function App() {
     setScreen('perfil')
   }
 
+  const refrescarFeeds = () => {
+    setRefreshFeedKey(prev => prev + 1)
+  }
+
   const irAComunidad = (comunidad) => {
     setComunidadActual(comunidad)
     localStorage.setItem(COMMUNITY_STORAGE_KEY, JSON.stringify(comunidad))
@@ -118,6 +123,7 @@ export default function App() {
       )}
       {screen === 'inicio' && (
         <InicioScreen
+          refreshKey={refreshFeedKey}
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => abrirPerfilUsuario(null)}
@@ -129,6 +135,7 @@ export default function App() {
       )}
       {screen === 'explorar' && (
         <ExplorarScreen
+          refreshKey={refreshFeedKey}
           onExplorar={() => setScreen('explorar')}
           onInicio={() => setScreen('inicio')}
           onPerfil={() => abrirPerfilUsuario(null)}
@@ -167,6 +174,7 @@ export default function App() {
           onPerfil={() => abrirPerfilUsuario(null)}
           onCrear={() => setScreen('crear')}
           onConfiguracion={() => setScreen('configuracion')}
+          onRefreshFeeds={refrescarFeeds}
         />
       )}
       {screen === 'comunidad' && (        

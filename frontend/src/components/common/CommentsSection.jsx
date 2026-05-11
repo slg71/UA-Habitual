@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { API_BASE, getAuthHeaders } from '../../utils/api'
-import { getStoredToken } from '../../utils/auth'
+import { getStoredToken, getUserIdFromToken } from '../../utils/auth'
 import '../../styles/comments-shared.css'
 
 const formatearFecha = iso =>
@@ -12,6 +12,10 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [deletingCommentId, setDeletingCommentId] = useState(null)
+  
+  const token = getStoredToken()
+  const currentUserId = getUserIdFromToken(token)
 
   useEffect(() => {
     if (!postId) return
@@ -82,6 +86,35 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
     }
   }
 
+  const eliminarComentario = async (commentId) => {
+    if (!token) return
+    if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) return
+
+    setDeletingCommentId(commentId)
+
+    try {
+      const response = await fetch(`${API_BASE}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(token)
+      })
+
+      if (response.ok) {
+        setComments(prev => prev.filter(c => c.id !== commentId))
+        if (onCommentCountChange) {
+          onCommentCountChange(comments.length - 1)
+        }
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Error al eliminar comentario')
+      }
+    } catch (err) {
+      console.error('Error eliminando comentario:', err)
+      setError('Error al eliminar comentario')
+    } finally {
+      setDeletingCommentId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="comments-section-body">
@@ -115,6 +148,16 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
                   <div className="comment-header">
                     <span className="comment-username">@{comment.username}</span>
                     <span className="comment-date">{formatearFecha(comment.created_at)}</span>
+                    {currentUserId && String(comment.user_id) === String(currentUserId) && (
+                      <button
+                        className="comment-delete-btn"
+                        onClick={() => eliminarComentario(comment.id)}
+                        disabled={deletingCommentId === comment.id}
+                        title="Eliminar comentario"
+                      >
+                        {deletingCommentId === comment.id ? '...' : '✕'}
+                      </button>
+                    )}
                   </div>
                   <p className="comment-text">{comment.content}</p>
                 </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CommentsSection from './common/CommentsSection'
+import MediaCarousel from './MediaCarousel'
 import DownloadConfirmModal from './DownloadConfirmModal'
 import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
 import imagenUsuario from '../assets/imagen-usuario.png'
@@ -23,13 +24,22 @@ export default function ProfilePostDetailModal({
   parseUrl
 }) {
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false)
+  const [selectedMediaForDownload, setSelectedMediaForDownload] = useState(null)
   const puedeBorrar = String(post.user_id) === String(currentUserId)
 
-  const handleDownload = () => {
-    if (post.media_url) {
-      const filename = getFilenameFromUrl(post.media_url, post.media_type)
-      downloadFile(post.media_url, filename)
-      setShowDownloadConfirm(false)
+  const mediaList = post.media_list && Array.isArray(post.media_list) ? post.media_list : (post.media_url ? [{ url: post.media_url, type: post.media_type }] : [])
+
+  const handleDownload = (media) => {
+    const filename = getFilenameFromUrl(media.url, media.type)
+    downloadFile(media.url, filename)
+    setShowDownloadConfirm(false)
+    setSelectedMediaForDownload(null)
+  }
+
+  const handleMediaDownloadClick = () => {
+    if (mediaList.length > 0) {
+      setSelectedMediaForDownload(mediaList[0])
+      setShowDownloadConfirm(true)
     }
   }
 
@@ -50,10 +60,10 @@ export default function ProfilePostDetailModal({
             <span className="post-detail-username">{post.username || currentUsername}</span>
           )}
           <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-            {post.media_url && (
+            {mediaList.length > 0 && (
               <button
                 className="post-detail-close"
-                onClick={() => setShowDownloadConfirm(true)}
+                onClick={handleMediaDownloadClick}
                 title="Descargar archivo"
                 style={{ fontSize: 18 }}
               >
@@ -64,19 +74,13 @@ export default function ProfilePostDetailModal({
           </div>
         </div>
 
-        {post.media_url && post.media_type === 'image' && <img src={parseUrl(post.media_url)} alt="Contenido" className="post-detail-img" />}
-        {post.media_url && post.media_type === 'video' && (
-          <video
-            src={parseUrl(post.media_url)}
-            controls
-            className="post-detail-img"
-          />
-        )}
-        {post.media_url && post.media_type === 'audio' && (
-          <audio
-            src={parseUrl(post.media_url)}
-            controls
-            style={{ width: '100%', margin: '16px 0' }}
+        {mediaList.length > 0 && (
+          <MediaCarousel
+            mediaList={mediaList}
+            onDownload={(media) => {
+              setSelectedMediaForDownload(media)
+              setShowDownloadConfirm(true)
+            }}
           />
         )}
 
@@ -110,11 +114,11 @@ export default function ProfilePostDetailModal({
 
         <CommentsSection postId={post.id} onCommentCountChange={onCommentCountChange} />
       </div>
-      {showDownloadConfirm && (
+      {showDownloadConfirm && selectedMediaForDownload && (
         <DownloadConfirmModal
-          onConfirm={handleDownload}
+          onConfirm={() => handleDownload(selectedMediaForDownload)}
           onCancel={() => setShowDownloadConfirm(false)}
-          filename={getFilenameFromUrl(post.media_url, post.media_type)}
+          filename={getFilenameFromUrl(selectedMediaForDownload.url, selectedMediaForDownload.type)}
         />
       )}
     </div>

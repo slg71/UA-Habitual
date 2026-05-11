@@ -12,7 +12,7 @@ import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken, getUserIdFromToken } from '../utils/auth'
 import { loadLikesCache, saveLikesCache } from '../utils/likesCache'
 
-export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad, onVerPerfil }) {
+export default function InicioScreen({ refreshKey, onPerfil, onExplorar, onInicio, onConfiguracion, onCrear, onComunidad, onVerPerfil }) {
   const [misComunidades, setMisComunidades] = useState([])
   const [todasComunidades, setTodasComunidades] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
@@ -149,7 +149,7 @@ export default function InicioScreen({ onPerfil, onExplorar, onInicio, onConfigu
 
   useEffect(() => {
     cargarFeedComunidades()
-  }, [])
+  }, [refreshKey])
 
   const toggleLike = async (post, e) => {
     e.stopPropagation()

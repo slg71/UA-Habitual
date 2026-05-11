@@ -106,6 +106,32 @@
   color: var(--hb-brown-mid);
 }
 
+.comment-delete-btn {
+  background: none;
+  border: none;
+  color: var(--hb-brown-mid);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 8px;
+  transition: color 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.comment-delete-btn:hover:not(:disabled) {
+  color: #c0392b;
+  transform: scale(1.15);
+}
+
+.comment-delete-btn:active {
+  transform: scale(0.95);
+}
+
+.comment-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .comment-text {
   font-size: 13px;
   color: var(--hb-text);
