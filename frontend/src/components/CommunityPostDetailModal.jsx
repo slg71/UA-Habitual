@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CommentsSection from './common/CommentsSection'
+import MediaCarousel from './MediaCarousel'
 import DownloadConfirmModal from './DownloadConfirmModal'
 import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
 import '../styles/post-detail-shared.css'
@@ -18,12 +19,19 @@ export default function CommunityPostDetailModal({
   parseUrl
 }) {
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false)
+  const [selectedMediaForDownload, setSelectedMediaForDownload] = useState(null)
 
-  const handleDownload = () => {
-    if (post.media_url) {
-      const filename = getFilenameFromUrl(post.media_url, post.media_type)
-      downloadFile(post.media_url, filename)
-      setShowDownloadConfirm(false)
+  const handleDownload = (media) => {
+    const filename = getFilenameFromUrl(media.url, media.type)
+    downloadFile(media.url, filename)
+    setShowDownloadConfirm(false)
+    setSelectedMediaForDownload(null)
+  }
+
+  const handleMediaDownloadClick = () => {
+    if (mediaList.length > 0) {
+      setSelectedMediaForDownload(mediaList[0])
+      setShowDownloadConfirm(true)
     }
   }
   return (
@@ -41,10 +49,10 @@ export default function CommunityPostDetailModal({
             {post.username}
           </button>
           <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-            {post.media_url && (
+            {mediaList.length > 0 && (
               <button
                 className="post-detail-close"
-                onClick={() => setShowDownloadConfirm(true)}
+                onClick={handleMediaDownloadClick}
                 title="Descargar archivo"
                 style={{ fontSize: 18 }}
               >
@@ -54,42 +62,15 @@ export default function CommunityPostDetailModal({
             <button className="post-detail-close" onClick={onClose}>✕</button>
           </div>
         </div>
-        {post.media_url && post.media_type === 'image' ? (
-          <img
-            src={parseUrl(post.media_url)}
-            alt="Contenido"
-            className="post-detail-img"
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
+        {mediaList.length > 0 && (
+          <MediaCarousel
+            mediaList={mediaList}
+            onDownload={(media) => {
+              setSelectedMediaForDownload(media)
+              setShowDownloadConfirm(true)
             }}
           />
-        ) : post.media_url && post.media_type === 'video' ? (
-          <video
-            src={parseUrl(post.media_url)}
-            controls
-            className="post-detail-img"
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
-        ) : post.media_url && post.media_type === 'audio' ? (
-          <audio
-            src={parseUrl(post.media_url)}
-            controls
-            style={{ width: '100%', margin: '16px 0' }}
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
-        ) : null}
-        {post.media_url ? (
-          <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'var(--hb-green-lt)', color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center' }}>
-            📷 No se ha podido cargar el contenido multimedia
-          </div>
-        ) : null}
+        )}
         <div className="post-detail-footer">
           <div className="post-detail-likes">
             <button
@@ -117,11 +98,11 @@ export default function CommunityPostDetailModal({
           onCommentCountChange={onCommentCountChange}
         />
       </div>
-      {showDownloadConfirm && (
+      {showDownloadConfirm && selectedMediaForDownload && (
         <DownloadConfirmModal
-          onConfirm={handleDownload}
+          onConfirm={() => handleDownload(selectedMediaForDownload)}
           onCancel={() => setShowDownloadConfirm(false)}
-          filename={getFilenameFromUrl(post.media_url, post.media_type)}
+          filename={getFilenameFromUrl(selectedMediaForDownload.url, selectedMediaForDownload.type)}
         />
       )}
     </div>

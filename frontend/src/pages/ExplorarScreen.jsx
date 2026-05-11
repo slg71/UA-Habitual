@@ -17,7 +17,7 @@ const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
-export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear, onVerPerfil, onConfiguracion }) {
+export default function ExplorarScreen({ refreshKey, onPerfil, onExplorar, onInicio, onCrear, onVerPerfil, onConfiguracion }) {
   const [posts, setPosts] = useState([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
@@ -134,7 +134,7 @@ export default function ExplorarScreen({ onPerfil, onExplorar, onInicio, onCrear
     }
   }, [])
 
-  useEffect(() => { cargarPosts() }, [])
+  useEffect(() => { cargarPosts() }, [cargarPosts, refreshKey])
 
   // ── Toggle like — idéntico a InicioScreen ────────────────────────────────
   const toggleLike = async (post, e) => {

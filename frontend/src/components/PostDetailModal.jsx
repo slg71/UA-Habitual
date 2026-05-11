@@ -1,22 +1,30 @@
 import { useState } from 'react'
 import CommentsSection from './common/CommentsSection'
+import MediaCarousel from './MediaCarousel'
 import DownloadConfirmModal from './DownloadConfirmModal'
 import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
 import '../styles/post-detail-shared.css'
 
 export default function PostDetailModal({ post, liked, likeCount, onLike, onClose, onAuthorClick, commentCount, onCommentCountChange }) {
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false)
+  const [selectedMediaForDownload, setSelectedMediaForDownload] = useState(null)
 
   const formatearFecha = iso =>
     iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
-  const parsearUrl = url => (!url ? '' : url.startsWith('http') ? url : `/api${url}`)
+  const mediaList = post.media_list && Array.isArray(post.media_list) ? post.media_list : (post.media_url ? [{ url: post.media_url, type: post.media_type }] : [])
 
-  const handleDownload = () => {
-    if (post.media_url) {
-      const filename = getFilenameFromUrl(post.media_url, post.media_type)
-      downloadFile(post.media_url, filename)
-      setShowDownloadConfirm(false)
+  const handleDownload = (media) => {
+    const filename = getFilenameFromUrl(media.url, media.type)
+    downloadFile(media.url, filename)
+    setShowDownloadConfirm(false)
+    setSelectedMediaForDownload(null)
+  }
+
+  const handleMediaDownloadClick = () => {
+    if (mediaList.length > 0) {
+      setSelectedMediaForDownload(mediaList[0])
+      setShowDownloadConfirm(true)
     }
   }
 
@@ -45,10 +53,10 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
             </span>
           )}
           <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-            {post.media_url && (
+            {mediaList.length > 0 && (
               <button
                 className="post-detail-close"
-                onClick={() => setShowDownloadConfirm(true)}
+                onClick={handleMediaDownloadClick}
                 title="Descargar archivo"
                 style={{ fontSize: 18 }}
               >
@@ -59,47 +67,14 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
           </div>
         </div>
 
-        {post.media_url && post.media_type === 'image' && (
-          <img
-            src={parsearUrl(post.media_url)}
-            alt="Contenido"
-            className="post-detail-img"
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
+        {mediaList.length > 0 && (
+          <MediaCarousel
+            mediaList={mediaList}
+            onDownload={(media) => {
+              setSelectedMediaForDownload(media)
+              setShowDownloadConfirm(true)
             }}
           />
-        )}
-        {post.media_url && post.media_type === 'video' && (
-          <video
-            src={parsearUrl(post.media_url)}
-            controls
-            className="post-detail-img"
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
-        )}
-        {post.media_url && post.media_type === 'audio' && (
-          <audio
-            src={parsearUrl(post.media_url)}
-            controls
-            style={{ width: '100%', margin: '16px 0' }}
-            onError={e => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
-          />
-        )}
-        {post.media_url && (
-          <div style={{
-            display: 'none', alignItems: 'center', justifyContent: 'center',
-            padding: '32px 16px', background: 'var(--hb-green-lt)',
-            color: 'var(--hb-brown-mid)', fontSize: 13, textAlign: 'center'
-          }}>
-            📷 No se ha podido cargar el contenido multimedia
-          </div>
         )}
 
         <div className="post-detail-footer">
@@ -131,11 +106,14 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
           onCommentCountChange={onCommentCountChange}
         />
       </div>
-      {showDownloadConfirm && (
+      {showDownloadConfirm && selectedMediaForDownload && (
         <DownloadConfirmModal
-          onConfirm={handleDownload}
-          onCancel={() => setShowDownloadConfirm(false)}
-          filename={getFilenameFromUrl(post.media_url, post.media_type)}
+          onConfirm={() => handleDownload(selectedMediaForDownload)}
+          onCancel={() => {
+            setShowDownloadConfirm(false)
+            setSelectedMediaForDownload(null)
+          }}
+          filename={getFilenameFromUrl(selectedMediaForDownload.url, selectedMediaForDownload.type)}
         />
       )}
     </div>
