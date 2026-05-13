@@ -516,13 +516,19 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         headers: misHeaders
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Error al marcar el objetivo como completado');
+        throw new Error(data.error || 'Error al marcar el objetivo como completado');
       }
 
       setObjetivos(prev => prev.map(o => o.id === pendingGoalToComplete.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
       setPendingGoalToComplete(null);
+
+      // Actualizar el usuario en la UI con los nuevos puntos/nivel que devuelve el servidor
+      if (data.totalPoints !== undefined) {
+        setUser(prev => prev ? { ...prev, score: data.totalPoints, rank_id: data.newLevel ?? prev.rank_id } : prev);
+      }
     } catch (err) {
       console.error('Error completando objetivo:', err);
     } finally {
