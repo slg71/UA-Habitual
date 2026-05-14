@@ -71,6 +71,15 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
 
   const LEVEL_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700];
 
+  const calcularNivelDesdeScore = (score = 0) => {
+    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+      if (score >= LEVEL_THRESHOLDS[i]) {
+        return i + 1;
+      }
+    }
+    return 1;
+  };
+
   const calcularProgresoNivel = (score = 0) => {
     for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
       if (score >= LEVEL_THRESHOLDS[i]) {
@@ -525,9 +534,9 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
       setObjetivos(prev => prev.map(o => o.id === pendingGoalToComplete.id ? { ...o, status: 'completed', completed_at: new Date().toISOString() } : o));
       setPendingGoalToComplete(null);
 
-      // Actualizar el usuario en la UI con los nuevos puntos/nivel que devuelve el servidor
+      // Actualizar el usuario en la UI con los nuevos puntos que devuelve el servidor
       if (data.totalPoints !== undefined) {
-        setUser(prev => prev ? { ...prev, score: data.totalPoints, rank_id: data.newLevel ?? prev.rank_id } : prev);
+        setUser(prev => prev ? { ...prev, score: data.totalPoints } : prev);
       }
     } catch (err) {
       console.error('Error completando objetivo:', err);
@@ -570,7 +579,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
         <button className="perfil-nivel-badge" onClick={() => setShowProgreso(true)}>
           <div className="badge-pulse" />
           <div className="medal-circle">
-            <span className="nivel-num">{user?.rank_id || 1}</span>
+            <span className="nivel-num">{calcularNivelDesdeScore(user?.score || 0)}</span>
           </div>
           <span className="nivel-lbl">Objetivos</span>
         </button>
@@ -694,6 +703,7 @@ export default function PerfilScreen({ onExplorar, onInicio, onPerfil, onCrear, 
           open={showProgreso}
           onClose={() => setShowProgreso(false)}
           user={user}
+          nivel={calcularNivelDesdeScore(user?.score || 0)}
           progress={miProgreso}
           monthLabel={MESES[mesActual]}
           yearLabel={añoActual}

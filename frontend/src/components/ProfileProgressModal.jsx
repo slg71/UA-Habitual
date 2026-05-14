@@ -13,6 +13,7 @@ export default function ProfileProgressModal({
   open,
   onClose,
   user,
+  nivel,
   progress,
   monthLabel,
   yearLabel,
@@ -87,7 +88,7 @@ export default function ProfileProgressModal({
         dominantBaseline="central"
         style={{ fontSize: '28px', fontWeight: 'bold', fill: 'var(--hb-brown)', fontFamily: 'var(--hb-font-title)' }}
       >
-        {user?.rank_id || 1}
+        {nivel || 1}
       </text>
       <text
         x="44" y="58"
