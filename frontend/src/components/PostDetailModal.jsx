@@ -3,6 +3,7 @@ import CommentsSection from './common/CommentsSection'
 import MediaCarousel from './MediaCarousel'
 import DownloadConfirmModal from './DownloadConfirmModal'
 import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
+import descargarIcon from '../assets/descargar.png'
 import '../styles/post-detail-shared.css'
 
 export default function PostDetailModal({ post, liked, likeCount, onLike, onClose, onAuthorClick, commentCount, onCommentCountChange }) {
@@ -55,12 +56,11 @@ export default function PostDetailModal({ post, liked, likeCount, onLike, onClos
           <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
             {mediaList.length > 0 && (
               <button
-                className="post-detail-close"
+                className="post-detail-download-btn"
                 onClick={handleMediaDownloadClick}
                 title="Descargar archivo"
-                style={{ fontSize: 18 }}
               >
-                ⬇️
+                <img src={descargarIcon} alt="Descargar" className="download-icon" />
               </button>
             )}
             <button className="post-detail-close" onClick={onClose}>✕</button>
