@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import '../styles/media-carousel.css'
-import descargarIcon from '../assets/descargar.png'
 
 export default function MediaCarousel({ mediaList = [], onDownload }) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -88,15 +87,6 @@ export default function MediaCarousel({ mediaList = [], onDownload }) {
           </>
         )}
 
-        {onDownload && (
-          <button
-            className="media-carousel-download"
-            onClick={() => onDownload(currentMedia)}
-            title="Descargar"
-          >
-            <img src={descargarIcon} alt="Descargar" className="download-icon" />
-          </button>
-        )}
       </div>
 
       {hasMultiple && (
