@@ -1,0 +1,110 @@
+import { useState } from 'react'
+import CommentsSection from './common/CommentsSection'
+import MediaCarousel from './MediaCarousel'
+import DownloadConfirmModal from './DownloadConfirmModal'
+import { downloadFile, getFilenameFromUrl } from '../utils/downloadFile'
+import descargarIcon from '../assets/descargar.png'
+import '../styles/post-detail-shared.css'
+
+export default function CommunityPostDetailModal({
+  post,
+  communityName,
+  liked,
+  likeCount,
+  commentCount,
+  onLike,
+  onClose,
+  onOpenAuthor,
+  onCommentCountChange,
+  formatDate,
+  parseUrl
+}) {
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false)
+  const [selectedMediaForDownload, setSelectedMediaForDownload] = useState(null)
+
+  const handleDownload = (media) => {
+    const filename = getFilenameFromUrl(media.url, media.type)
+    downloadFile(media.url, filename)
+    setShowDownloadConfirm(false)
+    setSelectedMediaForDownload(null)
+  }
+
+  const handleMediaDownloadClick = () => {
+    if (mediaList.length > 0) {
+      setSelectedMediaForDownload(mediaList[0])
+      setShowDownloadConfirm(true)
+    }
+  }
+  return (
+    <div className="modal-overlay post-overlay" onClick={onClose}>
+      <div className="post-detail-card" onClick={e => e.stopPropagation()}>
+        <div className="post-detail-header">
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--hb-green-lt)', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, color: 'var(--hb-green-dk)', flexShrink: 0 }}>
+            {post.username?.[0]?.toUpperCase()}
+          </div>
+          <button
+            type="button"
+            className="post-detail-username post-detail-username-btn"
+            onClick={() => onOpenAuthor(post.user_id)}
+          >
+            {post.username}
+          </button>
+          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            {mediaList.length > 0 && (
+              <button
+                className="post-detail-download-btn"
+                onClick={handleMediaDownloadClick}
+                title="Descargar archivo"
+              >
+                <img src={descargarIcon} alt="Descargar" className="download-icon" />
+              </button>
+            )}
+            <button className="post-detail-close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        {mediaList.length > 0 && (
+          <MediaCarousel
+            mediaList={mediaList}
+            onDownload={(media) => {
+              setSelectedMediaForDownload(media)
+              setShowDownloadConfirm(true)
+            }}
+          />
+        )}
+        <div className="post-detail-footer">
+          <div className="post-detail-likes">
+            <button
+              className={`like-btn like-btn--lg ${liked ? 'liked' : ''}`}
+              onClick={e => onLike(post, e)}
+            >
+              {liked ? '♥' : '♡'}
+            </button>
+            <span className="like-count">{likeCount}</span>
+          </div>
+          <div className="post-detail-caption">
+            <strong>{post.username}</strong> {post.content}
+          </div>
+          <div className="post-detail-comment">
+            <strong>Comunidad:</strong> {communityName || 'Sin comunidad'}
+          </div>
+          <div className="post-detail-comment">
+            <strong>Comentarios:</strong> {commentCount}
+          </div>
+          <div className="post-detail-date">{formatDate(post.created_at)}</div>
+        </div>
+
+        <CommentsSection
+          postId={post.id}
+          onCommentCountChange={onCommentCountChange}
+        />
+      </div>
+      {showDownloadConfirm && selectedMediaForDownload && (
+        <DownloadConfirmModal
+          onConfirm={() => handleDownload(selectedMediaForDownload)}
+          onCancel={() => setShowDownloadConfirm(false)}
+          filename={getFilenameFromUrl(selectedMediaForDownload.url, selectedMediaForDownload.type)}
+        />
+      )}
+    </div>
+  )
+}

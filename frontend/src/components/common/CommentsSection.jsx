@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { API_BASE, getAuthHeaders } from '../utils/api'
-import { getStoredToken, getUserIdFromToken } from '../utils/auth'
+import { API_BASE, getAuthHeaders } from '../../utils/api'
+import { getStoredToken, getUserIdFromToken } from '../../utils/auth'
+import '../../styles/comments-shared.css'
 
 const formatearFecha = iso =>
   iso ? new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
@@ -72,7 +73,7 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
 
       if (response.ok) {
         setNewComment('')
-        await cargarComentarios() // Recargar comentarios
+        await cargarComentarios()
       } else {
         const data = await response.json()
         setError(data.error || 'Error al enviar comentario')
@@ -116,74 +117,80 @@ export default function CommentsSection({ postId, onCommentCountChange }) {
 
   if (loading) {
     return (
-      <div className="comments-section">
+      <div className="comments-section-body">
         <div className="comments-loading">Cargando comentarios...</div>
       </div>
     )
   }
 
   return (
-    <div className="comments-section">
-      <div className="comments-header">
-        <h4>Comentarios</h4>
+    <>
+      {/* Cuerpo de los comentarios */}
+      <div className="comments-section-body">
+        <div className="comments-header">
+          <h4>Comentarios</h4>
+        </div>
+
+        {comments.length === 0 ? (
+          <div className="comments-empty">
+            <p>Sé el primero en comentar</p>
+          </div>
+        ) : (
+          <div className="comments-list">
+            {comments.map(comment => (
+              <div key={comment.id} className="comment-item">
+                <div className="comment-avatar">
+                  <div className="comment-avatar-circle">
+                    {comment.username?.[0]?.toUpperCase()}
+                  </div>
+                </div>
+                <div className="comment-content">
+                  <div className="comment-header">
+                    <span className="comment-username">@{comment.username}</span>
+                    <span className="comment-date">{formatearFecha(comment.created_at)}</span>
+                    {currentUserId && String(comment.user_id) === String(currentUserId) && (
+                      <button
+                        className="comment-delete-btn"
+                        onClick={() => eliminarComentario(comment.id)}
+                        disabled={deletingCommentId === comment.id}
+                        title="Eliminar comentario"
+                      >
+                        {deletingCommentId === comment.id ? '...' : '✕'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="comment-text">{comment.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {comments.length === 0 ? (
-        <div className="comments-empty">
-          <p>Sé el primero en comentar</p>
-        </div>
-      ) : (
-        <div className="comments-list">
-          {comments.map(comment => (
-            <div key={comment.id} className="comment-item">
-              <div className="comment-avatar">
-                <div className="comment-avatar-circle">
-                  {comment.username?.[0]?.toUpperCase()}
-                </div>
-              </div>
-              <div className="comment-content">
-                <div className="comment-header">
-                  <span className="comment-username">@{comment.username}</span>
-                  <span className="comment-date">{formatearFecha(comment.created_at)}</span>
-                  {currentUserId && String(comment.user_id) === String(currentUserId) && (
-                    <button
-                      className="comment-delete-btn"
-                      onClick={() => eliminarComentario(comment.id)}
-                      disabled={deletingCommentId === comment.id}
-                      title="Eliminar comentario"
-                    >
-                      {deletingCommentId === comment.id ? '...' : '✕'}
-                    </button>
-                  )}
-                </div>
-                <p className="comment-text">{comment.content}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <form className="comment-form" onSubmit={enviarComentario}>
-        <div className="comment-input-container">
-          <textarea
-            className="comment-input"
-            placeholder="Escribe un comentario..."
-            value={newComment}
-            onChange={e => setNewComment(e.target.value)}
-            maxLength={500}
-            rows={1}
-            disabled={submitting}
-          />
-          <button
-            type="submit"
-            className="comment-submit-btn"
-            disabled={!newComment.trim() || submitting}
-          >
-            {submitting ? '...' : 'Enviar'}
-          </button>
-        </div>
-        {error && <p className="comment-error">{error}</p>}
-      </form>
-    </div>
+      {/* Contenedor independiente para el formulario */}
+      <div className="comment-form-wrapper">
+        <form className="comment-form" onSubmit={enviarComentario}>
+          <div className="comment-input-container">
+            <textarea
+              className="comment-input"
+              placeholder="Escribe un comentario..."
+              value={newComment}
+              onChange={e => setNewComment(e.target.value)}
+              maxLength={500}
+              rows={1}
+              disabled={submitting}
+            />
+            <button
+              type="submit"
+              className="comment-submit-btn"
+              disabled={!newComment.trim() || submitting}
+            >
+              {submitting ? '...' : 'Enviar'}
+            </button>
+          </div>
+          {error && <p className="comment-error">{error}</p>}
+        </form>
+      </div>
+    </>
   )
 }

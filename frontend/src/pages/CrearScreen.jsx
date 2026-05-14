@@ -1,27 +1,14 @@
 import { useEffect, useState } from 'react'
 import '../styles/habitual.css'
 import '../styles/crear.css'
-import BottomNav from '../components/BottomNav'
+import BottomNav from '../components/common/BottomNav'
 import { API_BASE, getAuthHeaders } from '../utils/api'
 import { getStoredToken } from '../utils/auth'
 
-// Ejemplo con API:
-// const publicar = () => {
-//   const formData = new FormData()
-//   formData.append('actividad', actividad)
-//   formData.append('comentario', comentario)
-//   if (archivo) formData.append('archivo', archivo)
-//   fetch('/api/publicaciones', {
-//     method: 'POST',
-//     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-//     body: formData
-//   }).then(r => { if (r.ok) { setPublicado(true); setTimeout(() => onInicio(), 2000) } })
-// }
-
-export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear }) {
+export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear, onRefreshFeeds }) {
   const [actividad, setActividad]   = useState('')
   const [comentario, setComentario] = useState('')
-  const [archivo, setArchivo]       = useState(null)
+  const [archivos, setArchivos]     = useState([])
   const [publicado, setPublicado]   = useState(false)
   const [actividades, setActividades] = useState([])
   const [loading, setLoading] = useState(false)
@@ -88,9 +75,11 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
       const formData = new FormData()
       formData.append('content', comentario.trim())
       formData.append('community_id', String(Number(actividad)))
-      if (archivo) {
+      
+      // Agregar todos los archivos
+      archivos.forEach(archivo => {
         formData.append('media', archivo)
-      }
+      })
 
       const response = await fetch(`${API_BASE}/posts`, {
         method: 'POST',
@@ -109,12 +98,13 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
         throw new Error(data?.error || 'No se pudo crear la publicacion.')
       }
 
+      onRefreshFeeds?.()
       setPublicado(true)
       setTimeout(() => {
         setPublicado(false)
         setActividad('')
         setComentario('')
-        setArchivo(null)
+        setArchivos([])
         onPerfil()
       }, 1000)
     } catch (err) {
@@ -124,10 +114,19 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
     }
   }
 
+  function agregarArchivos(files) {
+    const nuevosArchivos = Array.from(files).slice(0, 10 - archivos.length)
+    setArchivos(prev => [...prev, ...nuevosArchivos])
+  }
+
+  function removerArchivo(index) {
+    setArchivos(prev => prev.filter((_, i) => i !== index))
+  }
+
   function cancelar() {
     setActividad('')
     setComentario('')
-    setArchivo(null)
+    setArchivos([])
     setError('')
     onPerfil()
   }
@@ -180,13 +179,30 @@ export default function CrearScreen({ onInicio, onExplorar, onPerfil, onCrear })
           />
 
           <label className="crear-archivo">
-            {archivo ? archivo.name : 'Añadir archivo multimedia'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => setArchivo(e.target.files[0])} />
+            {archivos.length === 0 ? 'Añadir multimedia' : `${archivos.length} archivo(s) seleccionado(s)`}
+            <input type="file" accept="image/*,video/*,audio/*" style={{ display: 'none' }} multiple onChange={e => agregarArchivos(e.target.files)} />
           </label>
+
+          {archivos.length > 0 && (
+            <div className="crear-archivos-list">
+              {archivos.map((archivo, index) => (
+                <div key={index} className="crear-archivo-item">
+                  <span className="crear-archivo-nombre">{archivo.name}</span>
+                  <button
+                    type="button"
+                    className="crear-archivo-remove"
+                    onClick={() => removerArchivo(index)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="crear-botones">
             <button className="hb-btn hb-btn--secondary crear-btn" onClick={cancelar} disabled={loading}>Cancelar</button>
-            <button className="hb-btn hb-btn--primary crear-btn" onClick={publicar} disabled={loading || loadingActividades}>
+            <button className="hb-btn hb-btn--primary crear-btn" onClick={publicar} disabled={loading || loadingActividades || !comentario.trim()}>
               {loading ? 'Publicando...' : 'Publicar'}
             </button>
           </div>
