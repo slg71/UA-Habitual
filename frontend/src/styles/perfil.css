@@ -300,6 +300,33 @@
 .racha-fin { border-top-right-radius: 14px; border-bottom-right-radius: 14px; }
 .racha-unico { border-radius: 14px; }
 
+/* ── Sección de Objetivos (Scrolleable) ── */
+.objetivos-section {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+.objetivos-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.objetivos-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.objetivos-section::-webkit-scrollbar-thumb {
+  background: rgba(74, 44, 26, 0.2);
+  border-radius: 3px;
+}
+
+.objetivos-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 44, 26, 0.35);
+}
+
 /* ── Objetivos ── */
 .objetivos-header {
   display: flex;
