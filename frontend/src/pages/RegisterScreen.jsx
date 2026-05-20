@@ -12,8 +12,24 @@ export default function RegisterScreen({ onBack, onLogin }) {
   const [error, setError] = useState('')
 
   const handleSubmit = async () => {
-    if (!name || !email || !password || !password2) {
+     if (!name || !email || !password || !password2) {
       setError('Completa todos los campos.')
+      return
+    }
+
+    if (name.trim().length < 3) {
+      setError('El nombre debe tener al menos 3 caracteres.')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError('Introduce un email válido (ej: jaimito@gmail.com).')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.')
       return
     }
 
