@@ -299,6 +299,53 @@ h1, h2, h3, h4, h5, h6 {
 .nav-label { display: inline; }
 
 /* ════════════════════════════════════════════════════
+   LOGOUT BUTTON
+   ════════════════════════════════════════════════════ */
+
+/* Móvil: esquina superior derecha, fijo */
+.logout-btn-mobile {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 101;
+  background: var(--hb-green-lt);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--hb-brown);
+  opacity: 0.9;
+  transition: opacity 0.2s, background 0.2s;
+}
+.logout-btn-mobile:hover { opacity: 1; background: var(--hb-green); color: #fff; }
+
+/* En tablet/desktop el botón flotante desaparece */
+@media (min-width: 600px) {
+  .logout-btn-mobile {
+    display: none;
+  }
+}
+
+/* Sidebar: empujado al fondo con margin-top auto */
+.logout-btn-sidebar {
+  display: none; /* oculto en móvil */
+  margin-top: auto !important;
+  opacity: 0.75;
+}
+.logout-btn-sidebar:hover { opacity: 1; }
+
+@media (min-width: 600px) {
+  .logout-btn-sidebar {
+    display: flex;
+  }
+}
+
+/* ════════════════════════════════════════════════════
    MODALES Y OVERLAYS
    ════════════════════════════════════════════════════ */
 
