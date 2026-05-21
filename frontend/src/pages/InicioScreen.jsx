@@ -28,7 +28,7 @@ export default function InicioScreen({ refreshKey, onPerfil, onExplorar, onInici
   const overlayRef = useRef(null)
 
 
-  // 2️⃣ Guardar en localStorage cada vez que likesMap cambia
+  // guardar en localStorage cada vez que likesMap cambia
   useEffect(() => {
     saveLikesCache(likesMap)
   }, [likesMap])
@@ -277,6 +277,8 @@ export default function InicioScreen({ refreshKey, onPerfil, onExplorar, onInici
         onExplorar={onExplorar}
         onPerfil={onPerfil}
         onCrear={onCrear}
+        /*Hacemos directamente un logout sin pasar por configuracion */
+        onLogout={onConfiguracion}
       />
 
       {modalAbierto && (
